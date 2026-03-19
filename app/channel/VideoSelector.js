@@ -36,7 +36,7 @@ export default function VideoSelector({ videos }) {
       <button
         disabled={!selectedVideo}
         onClick={() => {
-          window.location.href = `/analyze/${selectedVideo}`;
+          window.location.href = `/analyse/${selectedVideo}`;
         }}
         className={`mt-6 px-4 py-2 rounded text-white cursor-pointer
           ${selectedVideo ? "bg-blue-600" : "bg-gray-400"}`}
