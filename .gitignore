@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 
+pricing.md
+flow.md
+db.md
 # testing
 /coverage
 

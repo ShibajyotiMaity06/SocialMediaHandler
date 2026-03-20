@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Outfit } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import LandingChannelInput from "@/components/LandingChannelInput";
 
 const outfit = Outfit({ subsets: ["latin"], display: "swap" });
 
@@ -47,28 +48,7 @@ export default function Home() {
           </div>
 
           {/* Prompt / Input Box - Subtle & Compact */}
-          <div className="max-w-xl mx-auto relative group animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
-            <div className="relative bg-[#1a1a24]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl flex flex-col min-h-[110px] transition-all hover:border-white/20">
-              <textarea 
-                placeholder="Paste your YouTube handle or video link here..." 
-                className="flex-grow w-full bg-transparent text-white text-base lg:text-lg font-medium outline-none px-4 pt-3 pb-2 resize-none placeholder:text-gray-500"
-                rows="2"
-              />
-              <div className="flex items-center justify-between px-2 pb-1">
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white/5 text-gray-400 hover:text-white text-sm font-medium transition-colors">
-                  <span className="text-lg leading-none">+</span> Add Media
-                </button>
-                <Link href="/main">
-                  <button className="w-10 h-10 rounded-full bg-white hover:bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-md transition-transform hover:scale-105">
-                    <svg className="w-5 h-5 -rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </div>
+          <LandingChannelInput />
         </main>
       </div>
 

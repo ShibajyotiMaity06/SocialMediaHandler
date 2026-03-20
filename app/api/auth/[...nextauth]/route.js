@@ -4,6 +4,8 @@ import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import dbConnect from "../../lib/mongodb";
 import User from "../../lib/models/User";
+import Usage from "../../lib/models/Usage";
+import { getCurrentMonth, TIER_LIMITS } from "../../lib/helpers";
 
 const handler = NextAuth({
   providers: [
@@ -45,7 +47,7 @@ const handler = NextAuth({
           name: user.name,
           email: user.email,
           image: user.image,
-          credits: user.credits,
+          tier: user.tier,
         };
       },
     }),
@@ -64,13 +66,25 @@ const handler = NextAuth({
               email: user.email.toLowerCase(),
               image: user.image,
               provider: "google",
-              credits: 8,
+              tier: "free",
             });
             user.id = newUser._id.toString();
-            user.credits = newUser.credits;
+            user.tier = newUser.tier;
+
+            // Create usage record for first month
+            const month = getCurrentMonth();
+            const limits = TIER_LIMITS.free;
+            await Usage.create({
+              user_id: newUser._id,
+              month,
+              videos_used: 0,
+              videos_limit: limits.videos,
+              images_used: 0,
+              images_limit: limits.images,
+            });
           } else {
             user.id = existingUser._id.toString();
-            user.credits = existingUser.credits;
+            user.tier = existingUser.tier;
           }
         } catch (error) {
           console.error("Error during Google sign-in:", error);
@@ -82,14 +96,14 @@ const handler = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.userId = user.id;
-        token.credits = user.credits;
+        token.tier = user.tier;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.userId;
-        session.user.credits = token.credits;
+        session.user.tier = token.tier;
       }
       return session;
     },

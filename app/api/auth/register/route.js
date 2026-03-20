@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import dbConnect from "../../lib/mongodb";
 import User from "../../lib/models/User";
+import Usage from "../../lib/models/Usage";
+import { getCurrentMonth, TIER_LIMITS } from "../../lib/helpers";
 
 export async function POST(request) {
   try {
@@ -39,7 +41,19 @@ export async function POST(request) {
       email: email.toLowerCase(),
       password: hashedPassword,
       provider: "credentials",
-      credits: 8,
+      tier: "free",
+    });
+
+    // Create usage record for first month
+    const month = getCurrentMonth();
+    const limits = TIER_LIMITS.free;
+    await Usage.create({
+      user_id: user._id,
+      month,
+      videos_used: 0,
+      videos_limit: limits.videos,
+      images_used: 0,
+      images_limit: limits.images,
     });
 
     return NextResponse.json(

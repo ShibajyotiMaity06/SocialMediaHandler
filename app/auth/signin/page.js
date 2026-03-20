@@ -51,7 +51,7 @@ export default function SignInPage() {
           return;
         }
 
-        router.push("/main");
+        router.push("/dashboard");
       } else {
         // Sign in
         const res = await signIn("credentials", {
@@ -66,7 +66,7 @@ export default function SignInPage() {
           return;
         }
 
-        router.push("/main");
+        router.push("/dashboard");
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -76,7 +76,7 @@ export default function SignInPage() {
 
   async function handleGoogleSignIn() {
     setLoading(true);
-    signIn("google", { callbackUrl: "/main" });
+    signIn("google", { callbackUrl: "/dashboard" });
   }
 
   return (
@@ -117,8 +117,8 @@ export default function SignInPage() {
           </h2>
           <p className="text-slate-400 text-center text-sm mb-8">
             {isSignUp
-              ? "Sign up to get 5 bonus credits"
-              : "Sign in to access your credits"}
+              ? "Start with 2 free video adaptations per month"
+              : "Sign in to your dashboard"}
           </p>
 
           {/* Google OAuth Button */}
@@ -301,7 +301,7 @@ export default function SignInPage() {
               </text>
             </svg>
             <span className="text-xs text-slate-500">
-              Sign up and get <span className="text-yellow-400 font-semibold">5 bonus credits</span> (8 total)
+              Free plan includes <span className="text-indigo-400 font-semibold">2 video adaptations/month</span>
             </span>
           </div>
         </div>

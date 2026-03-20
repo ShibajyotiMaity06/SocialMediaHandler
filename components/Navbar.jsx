@@ -2,7 +2,6 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import CreditsDisplay from "./CreditsDisplay";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
@@ -21,17 +20,25 @@ export default function Navbar() {
         </span>
       </Link>
 
-      <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-white/70">
-        <a href="/#demo" className="hover:text-white transition-colors">Demo</a>
-        <a href="/#features" className="hover:text-white transition-colors">Features</a>
-        <a href="/#stats" className="hover:text-white transition-colors">Customers</a>
-        <a href="/#faq" className="hover:text-white transition-colors">FAQ</a>
-        <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
-      </nav>
+      {session ? (
+        /* Logged-in nav */
+        <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-white/70">
+          <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+          <Link href="/history" className="hover:text-white transition-colors">History</Link>
+          <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+        </nav>
+      ) : (
+        /* Public nav */
+        <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-white/70">
+          <a href="/#demo" className="hover:text-white transition-colors">Demo</a>
+          <a href="/#features" className="hover:text-white transition-colors">Features</a>
+          <a href="/#stats" className="hover:text-white transition-colors">Customers</a>
+          <a href="/#faq" className="hover:text-white transition-colors">FAQ</a>
+          <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+        </nav>
+      )}
 
       <div className="flex items-center gap-3">
-        <CreditsDisplay />
-
         {isLoading ? (
           <div className="w-20 h-9 rounded-full bg-white/5 animate-pulse" />
         ) : session ? (

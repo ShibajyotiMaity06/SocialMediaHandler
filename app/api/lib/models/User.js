@@ -14,6 +14,26 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    avatar: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    tier: {
+      type: String,
+      enum: ["free", "growth", "creator", "agency"],
+      default: "free",
+    },
+    stripe_customer_id: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    created_at: {
+      type: Date,
+      default: Date.now,
+      immutable: true,
+    },
     password: {
       type: String,
       // Not required for OAuth users
@@ -22,10 +42,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    credits: {
-      type: Number,
-      default: 8, // 3 base + 5 sign-in bonus
-    },
+
     provider: {
       type: String,
       enum: ["credentials", "google"],
