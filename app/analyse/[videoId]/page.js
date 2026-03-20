@@ -66,13 +66,13 @@ Views: ${views}
 Likes: ${likes}
 
 **TRANSCRIPT:**
-${rawTranscript.slice(0, 15000)}
+${rawTranscript.slice(0, 70000)}
 
 ---
 
 **YOUR TASKS:**
 
-1. **SUMMARIZE** the video content in 200-250 words
+1. **SUMMARIZE** the video content in 300-350 words
    - Capture key topics, main arguments, examples, and tone
    - Identify the core value proposition
    - Note the content structure (tutorial/story/opinion/review)
@@ -107,14 +107,10 @@ For each platform provide:
 
 **OUTPUT FORMAT:**
 
-## SUMMARY
-[200-250 word detailed summary]
-
 ## VIDEO PROFILE
 - **Niche:** [2-4 words]
 - **Content Type:** [type]
 - **Hook Style:** [hook type]
-- **Pacing:** [fast/moderate/slow]
 - **Audience Level:** [level]
 
 ## PLATFORM ANALYSIS
@@ -302,36 +298,39 @@ Make hooks that feel like they would actually go viral. Be punchy and direct.`,
   // 5. RENDER UI
   // ==========================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
+    <div className="flex-grow w-full py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="space-y-8">
         
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            📊 Video Analysis Dashboard
+        {/* Header styling */}
+        <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200/50 dark:border-slate-800/50 p-6 sm:p-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+          
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+            <span className="text-blue-600 dark:text-blue-400">📊</span>
+            Video Analysis Dashboard
           </h1>
           
           {videoDetails && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <p className="text-sm text-gray-600">Title</p>
-                <p className="font-semibold text-gray-800">{videoDetails.title}</p>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-6">
+              <div className="md:col-span-6 lg:col-span-8 bg-gray-50/50 dark:bg-slate-800/50 rounded-2xl p-5 border border-gray-100 dark:border-slate-700/50">
+                <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Title</p>
+                <p className="font-bold text-lg text-gray-900 dark:text-white line-clamp-2">{videoDetails.title}</p>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="font-semibold text-gray-800">{videoDetails.duration}</p>
+              <div className="md:col-span-6 lg:col-span-4 grid grid-cols-3 gap-4">
+                <div className="bg-gray-50/50 dark:bg-slate-800/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-700/50 flex flex-col items-center justify-center text-center">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Duration</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{videoDetails.duration.replace('PT','').replace('M','m ').replace('S','s').toLowerCase()}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Views</p>
-                  <p className="font-semibold text-gray-800">
-                    {parseInt(videoDetails.views).toLocaleString()}
+                <div className="bg-gray-50/50 dark:bg-slate-800/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-700/50 flex flex-col items-center justify-center text-center">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Views</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    {new Intl.NumberFormat('en-US', { notation: "compact" }).format(videoDetails.views)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Likes</p>
-                  <p className="font-semibold text-gray-800">
-                    {parseInt(videoDetails.likes).toLocaleString()}
+                <div className="bg-gray-50/50 dark:bg-slate-800/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-700/50 flex flex-col items-center justify-center text-center">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Likes</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    {new Intl.NumberFormat('en-US', { notation: "compact" }).format(videoDetails.likes)}
                   </p>
                 </div>
               </div>
@@ -341,67 +340,69 @@ Make hooks that feel like they would actually go viral. Be punchy and direct.`,
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg mb-6">
-            <h2 className="text-xl font-bold text-red-800 mb-2">⚠️ Error</h2>
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-6 rounded-2xl shadow-sm">
+            <h2 className="text-xl font-bold text-red-800 dark:text-red-400 mb-2 flex items-center gap-2">⚠️ Error</h2>
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
-        {/* PPS Analysis */}
-        {ppsAnalysis && (
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-              🎯 Platform Performance Analysis
-            </h2>
-            <div className="prose max-w-none">
-              <div
-                className="analysis-content"
-                style={{
-                  whiteSpace: "pre-wrap",
-                  lineHeight: "1.8",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: ppsAnalysis
-                    .replace(/## /g, '<h2 class="text-2xl font-bold text-gray-800 mt-8 mb-4">')
-                    .replace(/### /g, '<h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">')
-                    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-gray-800">$1</strong>')
-                    .replace(/^- (.+)$/gm, '<li class="ml-6 text-gray-700">$1</li>'),
-                }}
-              />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* PPS Analysis */}
+          {ppsAnalysis && (
+            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200/50 dark:border-slate-800/50 p-6 sm:p-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3 border-b border-gray-100 dark:border-slate-800 pb-4">
+                <span className="text-purple-500">🎯</span> Platform Performance
+              </h2>
+              <div className="prose dark:prose-invert max-w-none">
+                <div
+                  className="analysis-content"
+                  style={{ whiteSpace: "pre-wrap" }}
+                  dangerouslySetInnerHTML={{
+                    __html: ppsAnalysis
+                      .replace(/## /g, '<h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">')
+                      .replace(/### /g, '<h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-6 mb-3">')
+                      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>')
+                      .replace(/^- (.+)$/gm, '<li class="ml-6 text-gray-700 dark:text-gray-300">$1</li>'),
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Hook Suggestions */}
-        {hookSuggestions && (
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-              🔥 Viral Hook Suggestions
-            </h2>
-            <div className="prose max-w-none">
-              <div
-                className="hooks-content"
-                style={{
-                  whiteSpace: "pre-wrap",
-                  lineHeight: "1.8",
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: hookSuggestions
-                    .replace(/## /g, '<h2 class="text-2xl font-bold text-gray-800 mt-8 mb-4">')
-                    .replace(/### /g, '<h3 class="text-xl font-semibold text-purple-700 mt-6 mb-3">')
-                    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-gray-800">$1</strong>')
-                    .replace(/^- (.+)$/gm, '<li class="ml-6 text-gray-700">$1</li>'),
-                }}
-              />
+          {/* Hook Suggestions */}
+          {hookSuggestions && (
+            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200/50 dark:border-slate-800/50 p-6 sm:p-10">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3 border-b border-gray-100 dark:border-slate-800 pb-4">
+                <span className="text-orange-500">🔥</span> Viral Hooks
+              </h2>
+              <div className="prose dark:prose-invert max-w-none">
+                <div
+                  className="hooks-content"
+                  style={{ whiteSpace: "pre-wrap" }}
+                  dangerouslySetInnerHTML={{
+                    __html: hookSuggestions
+                      .replace(/## /g, '<h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-8 mb-4">')
+                      .replace(/### /g, '<h3 class="text-xl font-bold text-orange-600 dark:text-orange-400 mt-6 mb-3">')
+                      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>')
+                      .replace(/^- (.+)$/gm, '<li class="ml-6 text-gray-700 dark:text-gray-300">$1</li>'),
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Loading State */}
         {!ppsAnalysis && !hookSuggestions && !error && (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 text-lg">Analyzing video content...</p>
+          <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200/50 dark:border-slate-800/50 p-16 text-center">
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-t-4 border-blue-500 animate-spin"></div>
+              <div className="absolute inset-2 rounded-full border-r-4 border-purple-500 animate-spin animation-delay-150"></div>
+              <div className="absolute inset-4 rounded-full border-b-4 border-pink-500 animate-spin animation-delay-300"></div>
+            </div>
+            <p className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 animate-pulse">
+              AI is analyzing video content...
+            </p>
           </div>
         )}
 

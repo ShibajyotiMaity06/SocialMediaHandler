@@ -1,4 +1,11 @@
-// lib/youtube.js (server-side util)
+// app/api/lib/youtube.js
+
+import { YoutubeTranscript } from "youtube-transcript";
+
+/* ------------------------------------------
+   CHANNEL HELPERS
+------------------------------------------ */
+
 function getChannelLookupParam(channelInput) {
   const raw = decodeURIComponent(String(channelInput || "")).trim();
   if (!raw) throw new Error("Invalid channel URL");
@@ -34,9 +41,7 @@ function getChannelLookupParam(channelInput) {
     if ((first === "user" || first === "c") && second) {
       return `forUsername=${encodeURIComponent(second)}`;
     }
-  } catch {
-    // Fall through to regex fallback for partial values.
-  }
+  } catch {}
 
   const handleMatch = raw.match(/@([a-zA-Z0-9._-]+)/);
   if (handleMatch?.[1]) {
@@ -56,18 +61,23 @@ function getChannelLookupParam(channelInput) {
   throw new Error("Invalid channel URL");
 }
 
+/* ------------------------------------------
+   CHANNEL DATA
+------------------------------------------ */
+
 export async function getChannelData(channelUrl, apiKey) {
   const param = getChannelLookupParam(channelUrl);
 
   const url = `https://youtube.googleapis.com/youtube/v3/channels?part=snippet,contentDetails,statistics&${param}&key=${apiKey}`;
-  
+
   const res = await fetch(url);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
-  const data = await res.json();
 
-  if (!data.items?.[0]) throw new Error('Channel not found');
+  const data = await res.json();
+  if (!data.items?.[0]) throw new Error("Channel not found");
 
   const channel = data.items[0];
+
   return {
     id: channel.id,
     title: channel.snippet.title,
@@ -75,6 +85,48 @@ export async function getChannelData(channelUrl, apiKey) {
     subscriberCount: channel.statistics.subscriberCount,
     viewCount: channel.statistics.viewCount,
     videoCount: channel.statistics.videoCount,
-    uploadsPlaylist: channel.contentDetails.relatedPlaylists.uploads
+    uploadsPlaylist: channel.contentDetails.relatedPlaylists.uploads,
   };
+}
+
+/* ------------------------------------------
+   VIDEO DATA
+------------------------------------------ */
+
+export async function getVideoData(videoId, apiKey) {
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId}&key=${apiKey}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+  const data = await res.json();
+
+  if (!data.items || data.items.length === 0) {
+    throw new Error("Video not found");
+  }
+
+  const video = data.items[0];
+
+  return {
+    id: videoId,
+    title: video.snippet.title,
+    description: video.snippet.description,
+    thumbnail: video.snippet.thumbnails.high.url,
+    duration: video.contentDetails.duration,
+    views: video.statistics.viewCount,
+    likes: video.statistics.likeCount || "0",
+    publishedAt: video.snippet.publishedAt,
+    channelTitle: video.snippet.channelTitle,
+  };
+}
+
+
+export async function getVideoTranscript(videoId) {
+  try {
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    return transcript.map((t) => t.text).join(" ");
+  } catch (error) {
+    console.error("[TRANSCRIPT ERROR]", error.message);
+    return null;
+  }
 }
