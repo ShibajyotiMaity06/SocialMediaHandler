@@ -8,6 +8,12 @@ import { Outfit } from "next/font/google";
 
 const outfit = Outfit({ subsets: ["latin"], display: "swap" });
 
+const TEST_TIER_ALLOWED_EMAILS = new Set([
+  "shibajyoti.maity06@gmail.com",
+  "debajyoti.maity29@gmail.com",
+  "dipak903@gmail.com",
+]);
+
 const addOnPacks = [
   {
     key: "add10",
@@ -190,6 +196,13 @@ export default function PricingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(null); // tracks which tier is loading
   const [error, setError] = useState("");
+  const normalizedUserEmail = session?.user?.email?.toLowerCase();
+  const canSeeTestTier = Boolean(
+    normalizedUserEmail && TEST_TIER_ALLOWED_EMAILS.has(normalizedUserEmail)
+  );
+  const visiblePlans = canSeeTestTier
+    ? plans
+    : plans.filter((plan) => plan.tier !== "test");
 
   const handleCheckout = async ({ kind, tier, addonKey, lockMessage }) => {
     if (lockMessage) {
@@ -412,7 +425,7 @@ export default function PricingPage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 xl:gap-6 max-w-[1600px] mx-auto animate-fade-in-up"
           style={{ animationDelay: "100ms" }}
         >
-          {plans.map((plan, idx) => {
+          {visiblePlans.map((plan, idx) => {
             const isLoading = loading === plan.tier;
             const isPaid = plan.tier !== "free";
             const isLocked = Boolean(plan.locked);
