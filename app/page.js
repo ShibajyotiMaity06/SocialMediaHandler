@@ -63,7 +63,7 @@ export default function Home() {
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
           >
-            <source src="/demo.mp4" type="video/mp4" />
+            <source src="https://res.cloudinary.com/dbqxeqkow/video/upload/v1774104079/demo_hwr666.mp4" type="video/mp4" />
           </video>
 
           <div className="absolute inset-0 bg-gradient-to-t from-[#070709]/75 via-transparent to-transparent z-10 pointer-events-none"></div>
