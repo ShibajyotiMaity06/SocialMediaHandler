@@ -37,6 +37,19 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
     setError(null);
 
     try {
+      const usageCheckRes = await fetch('/api/usage/check', { method: 'POST' });
+      const usageCheck = await usageCheckRes.json();
+
+      if (!usageCheckRes.ok) {
+        throw new Error(usageCheck.error || 'Failed to validate usage limit');
+      }
+
+      if (!usageCheck.allowed) {
+        throw new Error(
+          `Video limit reached (${usageCheck.videos_used}/${usageCheck.videos_limit}). Upgrade to continue.`
+        );
+      }
+
       // Increment usage first
       await fetch('/api/usage/increment', { method: 'POST' });
 
@@ -208,7 +221,7 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
           <div className="relative z-10 max-w-lg mx-auto">
             <div className="w-14 h-14 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6 text-xl font-bold border border-blue-500/20">1</div>
             <h2 className="text-2xl font-bold text-white mb-4">Analyze Video Content</h2>
-            <p className="text-slate-400 mb-8">We'll extract key points, identify the niche, and prepare content for adaptation.</p>
+            <p className="text-slate-400 mb-8">We will extract key points, identify the niche, and prepare content for adaptation.</p>
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing}
@@ -293,7 +306,7 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
                   🎉 Your Content is Ready!
                 </h2>
                 <p className="text-purple-200/70 text-sm">
-                  We've generated platform-optimized posts based on your video. Review the hooks, tweak as needed, and copy!
+                  We have generated platform-optimized posts based on your video. Review the hooks, tweak as needed, and copy!
                 </p>
                 {usage && userTier === 'free' && (
                   <p className="text-xs text-purple-300/50 mt-2">

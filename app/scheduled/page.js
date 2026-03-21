@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
-
-const STORAGE_KEY = "currents_scheduled_posts_v1";
 
 const PLATFORM_OPTIONS = [
   { value: "tiktok", label: "TikTok", icon: "📱" },
@@ -11,6 +12,7 @@ const PLATFORM_OPTIONS = [
   { value: "linkedin", label: "LinkedIn", icon: "💼" },
   { value: "instagram", label: "Instagram", icon: "📸" },
   { value: "youtube", label: "YouTube", icon: "▶" },
+  { value: "youtube_shorts", label: "YouTube Shorts", icon: "🎬" },
 ];
 
 const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -91,13 +93,20 @@ function isPastDateKey(dateKey) {
 }
 
 export default function ScheduledPage() {
+  const { status } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [monthCursor, setMonthCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [posts, setPosts] = useState([]);
+  const [usage, setUsage] = useState(null);
   const [hoveredDate, setHoveredDate] = useState(null);
   const [feedback, setFeedback] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [modalState, setModalState] = useState({
     open: false,
     mode: "add",
@@ -109,33 +118,81 @@ export default function ScheduledPage() {
     date: toDateKey(new Date()),
     time: "09:00",
     notes: "",
+    content: "",
   });
-  const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setPosts(parsed);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load scheduled posts", error);
-    } finally {
-      setHydrated(true);
+  const prefillDoneRef = useRef(false);
+
+  const isLockedTier = usage && usage.tier === "free";
+
+  const loadPosts = useCallback(async () => {
+    const postsRes = await fetch("/api/posts");
+    const postsData = await postsRes.json();
+
+    if (!postsRes.ok) {
+      throw new Error(postsData.error || "Failed to fetch posts");
     }
+
+    setPosts(postsData.posts || []);
   }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+      const usageRes = await fetch("/api/usage");
+      const usageData = await usageRes.json();
+
+      if (!usageRes.ok) {
+        throw new Error(usageData.error || "Failed to load usage");
+      }
+
+      setUsage(usageData);
+      await loadPosts();
     } catch (error) {
-      console.error("Failed to save scheduled posts", error);
+      setFeedback(error.message || "Failed to load calendar data.");
+    } finally {
+      setLoading(false);
     }
-  }, [posts, hydrated]);
+  }, [loadPosts]);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin?callbackUrl=/scheduled");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      loadData();
+    }
+  }, [status, loadData]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || loading || prefillDoneRef.current) {
+      return;
+    }
+
+    const prefillTitle = searchParams.get("title");
+    if (!prefillTitle) {
+      prefillDoneRef.current = true;
+      return;
+    }
+
+    const prefillPlatform = searchParams.get("platform") || "twitter";
+    const prefillContent = searchParams.get("content") || "";
+    const todayKey = toDateKey(new Date());
+
+    setForm({
+      title: prefillTitle,
+      platform: prefillPlatform,
+      date: todayKey,
+      time: "09:00",
+      notes: "",
+      content: prefillContent,
+    });
+    setModalState({ open: true, mode: "add", postId: null });
+    prefillDoneRef.current = true;
+  }, [status, loading, searchParams]);
 
   const monthGrid = useMemo(() => getMonthGrid(monthCursor), [monthCursor]);
 
@@ -181,6 +238,11 @@ export default function ScheduledPage() {
   }, [posts]);
 
   function openAddModal(dateKey) {
+    if (isLockedTier) {
+      setFeedback("Scheduling is available on Growth and above.");
+      return;
+    }
+
     if (isPastDateKey(dateKey)) {
       setFeedback("Date is over. You can only add posts for today or future dates.");
       return;
@@ -192,17 +254,24 @@ export default function ScheduledPage() {
       date: dateKey,
       time: "09:00",
       notes: "",
+      content: "",
     });
     setModalState({ open: true, mode: "add", postId: null });
   }
 
   function openEditModal(post) {
+    if (isLockedTier) {
+      setFeedback("Scheduling is available on Growth and above.");
+      return;
+    }
+
     setForm({
       title: post.title,
       platform: post.platform,
       date: post.date,
       time: post.time,
       notes: post.notes || "",
+      content: post.content || "",
     });
     setModalState({ open: true, mode: "edit", postId: post.id });
   }
@@ -211,50 +280,78 @@ export default function ScheduledPage() {
     setModalState({ open: false, mode: "add", postId: null });
   }
 
-  function savePost(event) {
+  async function savePost(event) {
     event.preventDefault();
-
     if (!form.title.trim()) return;
 
-    if (modalState.mode === "add") {
-      const newPost = {
-        id: crypto.randomUUID(),
-        title: form.title.trim(),
-        platform: form.platform,
-        date: form.date,
-        time: form.time,
-        notes: form.notes.trim(),
-      };
-      setPosts((prev) => [...prev, newPost]);
-      setFeedback("Post scheduled.");
-    } else {
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === modalState.postId
-            ? {
-                ...post,
-                title: form.title.trim(),
-                platform: form.platform,
-                date: form.date,
-                time: form.time,
-                notes: form.notes.trim(),
-              }
-            : post
-        )
-      );
-      setFeedback("Post updated.");
-    }
+    try {
+      setSaving(true);
+      const endpoint =
+        modalState.mode === "add"
+          ? "/api/posts"
+          : `/api/posts/${modalState.postId}`;
+      const method = modalState.mode === "add" ? "POST" : "PATCH";
 
-    closeModal();
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title,
+          platform: form.platform,
+          date: form.date,
+          time: form.time,
+          notes: form.notes,
+          content: form.content,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to save post");
+      }
+
+      await loadPosts();
+      setFeedback(modalState.mode === "add" ? "Post scheduled." : "Post updated.");
+      closeModal();
+    } catch (error) {
+      setFeedback(error.message || "Failed to save post.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function removePost() {
+  async function removePost() {
     if (modalState.mode !== "edit") return;
 
-    setPosts((prev) => prev.filter((post) => post.id !== modalState.postId));
-    closeModal();
-    setFeedback("Post deleted.");
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/posts/${modalState.postId}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to delete post");
+      }
+
+      await loadPosts();
+      closeModal();
+      setFeedback("Post deleted.");
+    } catch (error) {
+      setFeedback(error.message || "Failed to delete post.");
+    } finally {
+      setSaving(false);
+    }
   }
+
+  if (status === "loading" || loading) {
+    return (
+      <div className="min-h-screen bg-[#070709] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (status !== "authenticated") return null;
 
   return (
     <div className="min-h-screen bg-[#070709] text-slate-200">
@@ -278,6 +375,16 @@ export default function ScheduledPage() {
             </button>
           </div>
         </section>
+
+        {isLockedTier && (
+          <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Scheduling is locked on Free. Upgrade to Growth to create and manage scheduled posts. {" "}
+            <Link href="/pricing" className="font-bold underline hover:text-amber-100">
+              Upgrade now
+            </Link>
+            .
+          </div>
+        )}
 
         {feedback && (
           <div className="mb-4 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm text-cyan-200">
@@ -537,13 +644,25 @@ export default function ScheduledPage() {
                 />
               </div>
 
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Post text (optional)</label>
+                <textarea
+                  rows={4}
+                  value={form.content}
+                  onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
+                  placeholder="Paste generated post content here"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50 resize-none"
+                />
+              </div>
+
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
                 <div>
                   {modalState.mode === "edit" && (
                     <button
                       type="button"
                       onClick={removePost}
-                      className="px-3 py-2 rounded-lg border border-red-400/30 bg-red-500/10 text-red-300 text-sm hover:bg-red-500/20"
+                      disabled={saving}
+                      className="px-3 py-2 rounded-lg border border-red-400/30 bg-red-500/10 text-red-300 text-sm hover:bg-red-500/20 disabled:opacity-50"
                     >
                       Delete
                     </button>
@@ -554,15 +673,21 @@ export default function ScheduledPage() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-slate-300 text-sm hover:bg-white/10"
+                    disabled={saving}
+                    className="px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-slate-300 text-sm hover:bg-white/10 disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-[#061220] font-bold text-sm hover:brightness-110"
+                    disabled={saving}
+                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-[#061220] font-bold text-sm hover:brightness-110 disabled:opacity-50"
                   >
-                    {modalState.mode === "add" ? "Save Post" : "Save Changes"}
+                    {saving
+                      ? "Saving..."
+                      : modalState.mode === "add"
+                        ? "Save Post"
+                        : "Save Changes"}
                   </button>
                 </div>
               </div>

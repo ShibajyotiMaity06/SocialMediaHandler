@@ -10,7 +10,7 @@ const SubscriptionSchema = new mongoose.Schema(
     },
     tier: {
       type: String,
-      enum: ["free", "growth", "creator", "agency"],
+      enum: ["free", "test", "growth", "creator", "pro", "agency"],
       required: true,
     },
     status: {
@@ -33,6 +33,16 @@ const SubscriptionSchema = new mongoose.Schema(
       default: "",
       trim: true,
       index: true,
+    },
+    razorpay_order_id: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    razorpay_payment_id: {
+      type: String,
+      default: "",
+      trim: true,
     },
   },
   {

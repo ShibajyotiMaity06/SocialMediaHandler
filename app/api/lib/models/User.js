@@ -21,10 +21,10 @@ const UserSchema = new mongoose.Schema(
     },
     tier: {
       type: String,
-      enum: ["free", "growth", "creator", "agency"],
+      enum: ["free", "test", "growth", "creator", "pro", "agency"],
       default: "free",
     },
-    stripe_customer_id: {
+    razorpay_customer_id: {
       type: String,
       default: "",
       trim: true,

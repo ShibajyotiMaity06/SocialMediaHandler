@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { PLATFORM_CONFIG } from '@/app/api/lib/constants';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const CircularProgress = ({ score, category }) => {
   const radius = 20;
@@ -49,10 +50,17 @@ export default function PlatformCard({
   onHookChange,
   onRequestVariations
 }) {
+  const router = useRouter();
   const [showIntel, setShowIntel] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoadingVariations, setIsLoadingVariations] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+  const [imageCreditsMeta, setImageCreditsMeta] = useState(null);
+  const [imageError, setImageError] = useState('');
 
   const config = PLATFORM_CONFIG[adaptation.platform];
   const isFree = userTier === 'free';
@@ -80,6 +88,64 @@ export default function PlatformCard({
     navigator.clipboard.writeText(fullPost);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const openImageModal = () => {
+    const defaultPrompt = `${adaptation.selectedHook}\n\n${adaptation.mainPost}`.trim();
+    setImagePrompt(defaultPrompt);
+    setGeneratedImageUrl('');
+    setImageCreditsMeta(null);
+    setImageError('');
+    setShowImageModal(true);
+  };
+
+  const handleGenerateImage = async () => {
+    const finalPrompt = imagePrompt.trim();
+    if (!finalPrompt) {
+      setImageError('Please add prompt text or post text first.');
+      return;
+    }
+
+    try {
+      setIsGeneratingImage(true);
+      setImageError('');
+
+      const response = await fetch('/api/image/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: finalPrompt,
+          postText: `${adaptation.selectedHook}\n\n${adaptation.mainPost}`,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Image generation failed');
+      }
+
+      setGeneratedImageUrl(result.image_data_url);
+      setImageCreditsMeta({
+        used: result.images_used,
+        limit: result.images_limit,
+        remaining: result.images_remaining,
+      });
+    } catch (error) {
+      setImageError(error.message || 'Failed to generate image.');
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const handleSchedule = () => {
+    const title = adaptation.selectedHook?.slice(0, 80) || `New ${config.name} post`;
+    const content = `${adaptation.selectedHook}\n\n${adaptation.mainPost}`;
+    const params = new URLSearchParams({
+      title,
+      platform: adaptation.platform,
+      content,
+    });
+    router.push(`/scheduled?${params.toString()}`);
   };
 
   const isLongPost = adaptation.mainPost.length > 300;
@@ -247,15 +313,35 @@ export default function PlatformCard({
 
             {/* Premium action grid */}
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-              <Link href={isFree ? "/pricing" : "#"} className="py-3.5 px-4 rounded-xl border border-white/5 bg-white/5 text-slate-300 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/10 transition-colors group">
-                <span className="opacity-70 group-hover:opacity-100 transition-opacity">🖼️</span> Image
-                {isFree && <span className="ml-1 text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-500/20">🔒 Upgrade</span>}
-              </Link>
+              {isFree ? (
+                <Link href="/pricing" className="py-3.5 px-4 rounded-xl border border-white/5 bg-white/5 text-slate-300 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/10 transition-colors group">
+                  <span className="opacity-70 group-hover:opacity-100 transition-opacity">🖼️</span> Image
+                  <span className="ml-1 text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-500/20">🔒 Upgrade</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openImageModal}
+                  className="py-3.5 px-4 rounded-xl border border-white/5 bg-white/5 text-slate-300 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/10 transition-colors group"
+                >
+                  <span className="opacity-70 group-hover:opacity-100 transition-opacity">🖼️</span> Generate Image
+                </button>
+              )}
               
-              <Link href={isFree ? "/pricing" : "#"} className="py-3.5 px-4 rounded-xl border border-white/5 bg-white/5 text-slate-300 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/10 transition-colors group">
-                <span className="opacity-70 group-hover:opacity-100 transition-opacity">📅</span> Schedule
-                {isFree && <span className="ml-1 text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-500/20">🔒 Upgrade</span>}
-              </Link>
+              {isFree ? (
+                <Link href="/pricing" className="py-3.5 px-4 rounded-xl border border-white/5 bg-white/5 text-slate-300 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/10 transition-colors group">
+                  <span className="opacity-70 group-hover:opacity-100 transition-opacity">📅</span> Schedule
+                  <span className="ml-1 text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-bold border border-amber-500/20">🔒 Upgrade</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSchedule}
+                  className="py-3.5 px-4 rounded-xl border border-white/5 bg-white/5 text-slate-300 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/10 transition-colors group"
+                >
+                  <span className="opacity-70 group-hover:opacity-100 transition-opacity">📅</span> Schedule
+                </button>
+              )}
 
               <Link href={isFree ? "/pricing" : "#"} className="col-span-2 lg:col-span-1 py-3.5 px-4 rounded-xl border border-white/5 bg-white/5 text-slate-300 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white/10 hover:border-white/10 transition-colors group">
                 <span className="opacity-70 group-hover:opacity-100 transition-opacity">🚀</span> Auto-post
@@ -265,6 +351,75 @@ export default function PlatformCard({
           </div>
         </div>
       </div>
+
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/15 bg-[#12141a] p-5">
+            <h4 className="text-lg font-bold text-white mb-1">Generate AI Image</h4>
+            <p className="text-xs text-slate-400 mb-4">
+              Enter prompt text or use your post text as the image prompt. Each generation consumes 1 image credit.
+            </p>
+
+            <div className="space-y-3">
+              <textarea
+                rows={5}
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                placeholder="Describe the image to generate"
+                className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50 resize-none"
+              />
+
+              {imageError && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {imageError}
+                </div>
+              )}
+
+              {imageCreditsMeta && (
+                <div className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-200">
+                  Images used: {imageCreditsMeta.used}/{imageCreditsMeta.limit} • Remaining: {imageCreditsMeta.remaining}
+                </div>
+              )}
+
+              {generatedImageUrl && (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-3">
+                  <img
+                    src={generatedImageUrl}
+                    alt="Generated visual"
+                    className="w-full max-h-[420px] object-contain rounded-lg bg-black/20"
+                  />
+                  <a
+                    href={generatedImageUrl}
+                    download={`currents-${adaptation.platform}-image.png`}
+                    className="inline-flex px-4 py-2 rounded-lg bg-white text-[#070709] text-sm font-bold hover:bg-slate-200 transition-colors"
+                  >
+                    Download Image
+                  </a>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowImageModal(false)}
+                  disabled={isGeneratingImage}
+                  className="px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-slate-300 text-sm hover:bg-white/10 disabled:opacity-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-[#061220] font-bold text-sm hover:brightness-110 disabled:opacity-50"
+                >
+                  {isGeneratingImage ? 'Generating...' : 'Generate'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

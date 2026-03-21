@@ -2,11 +2,22 @@ import mongoose from "mongoose";
 
 const PostSchema = new mongoose.Schema(
   {
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     adaptation_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Adaptation",
-      required: true,
+      default: null,
       index: true,
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
     },
     platform: {
       type: String,
@@ -16,7 +27,12 @@ const PostSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: true,
+      default: "",
+      trim: true,
+    },
+    notes: {
+      type: String,
+      default: "",
       trim: true,
     },
     selected_hook: {
@@ -46,7 +62,7 @@ const PostSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["draft", "scheduled", "published"],
-      default: "draft",
+      default: "scheduled",
       required: true,
       index: true,
     },
