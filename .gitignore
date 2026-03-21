@@ -20,6 +20,9 @@ db.md
 /.next/
 /out/
 
+demo.mp4
+public/demo.mp4
+
 # production
 /build
 
