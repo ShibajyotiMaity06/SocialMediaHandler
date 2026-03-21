@@ -120,6 +120,69 @@ export async function getVideoData(videoId, apiKey) {
   };
 }
 
+export async function searchTrendingVideosByNiche(
+  niche,
+  apiKey,
+  daysBack = 5,
+  maxResults = 25
+) {
+  const safeDaysBack = Math.max(3, Math.min(5, Number(daysBack) || 5));
+  const safeMaxResults = Math.max(5, Math.min(50, Number(maxResults) || 25));
+  const publishedAfter = new Date(Date.now() - safeDaysBack * 24 * 60 * 60 * 1000).toISOString();
+
+  const searchUrl =
+    "https://www.googleapis.com/youtube/v3/search?" +
+    new URLSearchParams({
+      part: "snippet",
+      type: "video",
+      order: "viewCount",
+      maxResults: String(safeMaxResults),
+      q: niche,
+      publishedAfter,
+      key: apiKey,
+    }).toString();
+
+  const searchRes = await fetch(searchUrl);
+  if (!searchRes.ok) {
+    throw new Error(`YouTube search failed: ${searchRes.status}`);
+  }
+
+  const searchData = await searchRes.json();
+  const videoIds = (searchData.items || []).map((item) => item?.id?.videoId).filter(Boolean);
+
+  if (videoIds.length === 0) {
+    return [];
+  }
+
+  const videoUrl =
+    "https://www.googleapis.com/youtube/v3/videos?" +
+    new URLSearchParams({
+      part: "snippet,statistics",
+      id: videoIds.join(","),
+      key: apiKey,
+    }).toString();
+
+  const videoRes = await fetch(videoUrl);
+  if (!videoRes.ok) {
+    throw new Error(`YouTube videos lookup failed: ${videoRes.status}`);
+  }
+
+  const videoData = await videoRes.json();
+
+  return (videoData.items || []).map((item) => ({
+    videoId: item.id,
+    title: item.snippet?.title || "",
+    description: item.snippet?.description || "",
+    channelTitle: item.snippet?.channelTitle || "",
+    publishedAt: item.snippet?.publishedAt || null,
+    thumbnail: item.snippet?.thumbnails?.high?.url || "",
+    viewCount: Number(item.statistics?.viewCount || 0),
+    likeCount: Number(item.statistics?.likeCount || 0),
+    commentCount: Number(item.statistics?.commentCount || 0),
+    url: `https://www.youtube.com/watch?v=${item.id}`,
+  }));
+}
+
 
 export async function getVideoTranscript(videoId) {
   try {

@@ -24,6 +24,7 @@ export default function Navbar() {
         /* Logged-in nav */
         <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-white/70">
           <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+          <Link href="/trends" className="hover:text-white transition-colors">Trends</Link>
           <Link href="/scheduled" className="hover:text-white transition-colors">Scheduled</Link>
           <Link href="/history" className="hover:text-white transition-colors">History</Link>
           <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
