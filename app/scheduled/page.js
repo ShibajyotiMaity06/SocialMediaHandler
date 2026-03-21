@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -92,7 +92,7 @@ function isPastDateKey(dateKey) {
   return target < todayAtMidnight;
 }
 
-export default function ScheduledPage() {
+function ScheduledPageContent() {
   const { status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -696,5 +696,21 @@ export default function ScheduledPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ScheduledPageFallback() {
+  return (
+    <div className="min-h-screen bg-[#070709] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+export default function ScheduledPage() {
+  return (
+    <Suspense fallback={<ScheduledPageFallback />}>
+      <ScheduledPageContent />
+    </Suspense>
   );
 }
