@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import CreditsDisplay from "@/components/CreditsDisplay";
 
 export default function Main() {
@@ -32,12 +33,16 @@ export default function Main() {
       {/* Mini Header */}
       <div className="w-full px-6 py-4 flex items-center justify-between border-b border-gray-200/10 dark:border-gray-800/50 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+          <div className="relative w-7 h-7 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/10 ring-1 ring-gray-300/40 dark:ring-white/20">
+            <Image
+              src="/logo.png"
+              alt="VyralPro logo"
+              fill
+              sizes="28px"
+              className="object-contain p-0.5"
+            />
           </div>
-          <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Currents</span>
+          <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">VyralPro</span>
         </Link>
         <div className="flex items-center gap-3">
           <CreditsDisplay />

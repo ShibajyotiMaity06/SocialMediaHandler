@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Outfit } from "next/font/google";
+import Image from "next/image";
 
 const outfit = Outfit({ subsets: ["latin"], display: "swap" });
 
@@ -90,23 +91,18 @@ export default function SignInPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-10">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
+          <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-white/10 ring-1 ring-white/20 shadow-lg shadow-indigo-500/20">
+            <Image
+              src="/logo.png"
+              alt="VyralPro logo"
+              fill
+              sizes="40px"
+              className="object-contain p-1"
+              priority
+            />
           </div>
           <span className="text-2xl font-black tracking-tight text-white">
-            Currents
+            VyralPro
           </span>
         </div>
 

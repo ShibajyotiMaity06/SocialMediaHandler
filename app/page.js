@@ -1,16 +1,17 @@
 import Link from "next/link";
-import { Outfit } from "next/font/google";
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import LandingChannelInput from "@/components/LandingChannelInput";
 
-const outfit = Outfit({ subsets: ["latin"], display: "swap" });
-
 export default function Home() {
   return (
-    <div className={`${outfit.className} min-h-screen bg-[#070709] text-slate-200 selection:bg-indigo-500 selection:text-white pb-20 overflow-x-hidden`}>
+    <div className="relative isolate min-h-screen bg-[#070709] text-slate-200 selection:bg-indigo-500 selection:text-white pb-20 overflow-x-hidden">
+
       
       {/* Background Image Wrapper for Hero */}
-      <div className="relative w-full bg-[url('/bg.png')] bg-cover bg-center bg-no-repeat lg:bg-[length:100%_auto] min-h-[85vh]">
+      <div className="relative z-10 w-full min-h-[85vh]">
+        {/* Animated Background Image */}
+        <div className="absolute inset-0 z-0 bg-[url('/logo.png')] bg-cover bg-center bg-no-repeat lg:bg-[length:100%_auto] opacity-60 bg-drift"></div>
         {/* Dark overlay to make text readable based on bg.png brightness */}
         <div className="absolute inset-0 bg-black/60 bg-gradient-to-b from-transparent via-[#070709]/80 to-[#070709] z-0"></div>
 
@@ -20,17 +21,17 @@ export default function Home() {
         {/* Hero Section */}
         <main className="relative z-10 container mx-auto px-6 pt-20 pb-32 text-center max-w-5xl">
           {/* Animated Badge */}
-          <div className="inline-flex items-center justify-center px-4 py-1.5 mb-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-medium text-xs md:text-sm tracking-wide shadow-sm backdrop-blur-md animate-fade-in-up">
+          <div className="inline-flex items-center justify-center px-4 py-1.5 mb-8 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-white font-semibold text-xs md:text-sm tracking-wide shadow-sm backdrop-blur-md animate-fade-in-up">
             <span className="flex w-2 h-2 rounded-full bg-indigo-500 mr-2 animate-pulse"></span>
             Your Ultimate Content Engine
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-[76px] font-black tracking-[-0.03em] leading-[1.1] text-white mb-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-            Think It. Type It. <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Launch It.</span>
+            Enter it <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Monetize it</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-10 font-normal leading-relaxed animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-            Currents offers everything you need to manage your videos, adapt to platforms, capture leads, and grow your audience magically with AI.
+          <p className="text-lg md:text-xl text-white/95 max-w-2xl mx-auto mb-10 font-normal leading-relaxed animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            VyralPro offers everything you need to manage your videos, adapt to platforms, capture leads, and grow your audience magically with AI.
           </p>
 
           {/* Supported Platforms Mini Icons */}
@@ -190,7 +191,7 @@ export default function Home() {
           {[
             { q: "What social platforms do you support?", a: "We support YouTube, Twitter (X), LinkedIn, TikTok, Instagram Reels, Facebook, Pinterest, and even automated blogging platforms like Medium and WordPress." },
             { q: "How does the AI Adaptation work?", a: "Our AI processes the video transcript, identifies peak viral moments, trims the video, and generates platform-native caption styles (e.g., long-form threads for X, professional insights for LinkedIn)." },
-            { q: "Do I need technical skills?", a: "None at all! If you can paste a YouTube link or type a topic, Currents handles all the heavy lifting." },
+            { q: "Do I need technical skills?", a: "None at all! If you can paste a YouTube link or type a topic, VyralPro handles all the heavy lifting." },
             { q: "Is there a free trial?", a: "Yes, you can try adapting 1 video for free to see the magic before ever paying." }
           ].map((faq, i) => (
             <details key={i} className="group bg-[#121216] border border-white/5 rounded-2xl open:bg-[#16161b] hover:border-white/10 transition-colors duration-300">
@@ -213,10 +214,16 @@ export default function Home() {
         <div className="container mx-auto px-6 max-w-7xl flex flex-col md:flex-row justify-between items-center md:items-start gap-8">
           <div className="flex flex-col items-center md:items-start max-w-xs">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <span className="font-bold text-white text-sm">C</span>
+              <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-white/10 ring-1 ring-white/20">
+                <Image
+                  src="/logo.png"
+                  alt="VyralPro logo"
+                  fill
+                  sizes="32px"
+                  className="object-contain p-0.5"
+                />
               </div>
-              <span className="text-xl font-bold tracking-tight text-white">Currents</span>
+              <span className="text-xl font-bold tracking-tight text-white">VyralPro</span>
             </div>
             <p className="text-slate-500 text-sm text-center md:text-left font-medium">
               Build an audience, capture leads, and grow your business faster with AI.
@@ -240,10 +247,10 @@ export default function Home() {
         </div>
         
         <div className="container mx-auto px-6 max-w-7xl mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 font-medium gap-4">
-          <p>© {new Date().getFullYear()} Currents. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} VyralPro. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Twitter (X)</a>
-            <a href="#" className="hover:text-white transition-colors">Discord Support</a>
+            <a href="https://x.com/maity0602" className="hover:text-white transition-colors">Twitter (X)</a>
+            <a href="https://www.linkedin.com/in/shibajyoti-maity-5992b126a/" className="hover:text-white transition-colors">Linkedin</a>
           </div>
         </div>
       </footer>

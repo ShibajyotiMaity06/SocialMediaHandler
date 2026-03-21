@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Outfit } from "next/font/google";
@@ -256,7 +257,7 @@ export default function PricingPage() {
         key: orderData.key_id,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "Currents",
+        name: "VyralPro",
         description:
           kind === "addon"
             ? `${orderData.plan_name} Add-on`
@@ -355,23 +356,18 @@ export default function PricingPage() {
           href="/"
           className="flex items-center gap-3 group cursor-pointer"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
+          <div className="relative w-9 h-9 rounded-xl overflow-hidden bg-white/10 ring-1 ring-white/20 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
+            <Image
+              src="/logo.png"
+              alt="VyralPro logo"
+              fill
+              sizes="36px"
+              className="object-contain p-1"
+              priority
+            />
           </div>
           <span className="text-2xl font-black tracking-tight text-white group-hover:text-indigo-100 transition-colors">
-            Currents
+            VyralPro
           </span>
         </Link>
         <Link href="/">

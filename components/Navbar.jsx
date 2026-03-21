@@ -1,22 +1,47 @@
 "use client";
 
+import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function Navbar() {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
+  const mobileLinks = session
+    ? [
+        { href: "/dashboard", label: "Dashboard" },
+        { href: "/trends", label: "Trends" },
+        { href: "/scheduled", label: "Scheduled" },
+        { href: "/history", label: "History" },
+        { href: "/pricing", label: "Pricing" },
+      ]
+    : [
+        { href: "/#demo", label: "Demo" },
+        { href: "/#features", label: "Features" },
+        { href: "/#stats", label: "Customers" },
+        { href: "/#faq", label: "FAQ" },
+        { href: "/pricing", label: "Pricing" },
+      ];
 
   return (
-    <header className="relative z-20 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-      <Link href="/" className="flex items-center gap-3 group cursor-pointer">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
-          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+    <header className="relative z-20 w-full max-w-7xl mx-auto px-6 py-6">
+      <div className="flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+        <div className="relative w-12 h-12 rounded-full overflow-hidden transition-transform duration-300 group-hover:scale-105">
+          <Image
+            src="/logo.png"
+            alt="VyralPro logo"
+            fill
+            sizes="48px"
+            className="object-contain"
+            priority
+          />
         </div>
         <span className="text-2xl font-black tracking-tight text-white group-hover:text-indigo-100 transition-colors">
-          Currents
+          VyralPro
         </span>
       </Link>
 
@@ -40,18 +65,12 @@ export default function Navbar() {
         </nav>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="hidden md:flex items-center gap-3">
         {isLoading ? (
           <div className="w-20 h-9 rounded-full bg-white/5 animate-pulse" />
         ) : session ? (
           <div className="flex items-center gap-3">
-            {session.user?.image && (
-              <img
-                src={session.user.image}
-                alt=""
-                className="w-8 h-8 rounded-full border-2 border-white/20"
-              />
-            )}
+            
             <span className="hidden sm:block text-sm font-semibold text-white/80 max-w-[100px] truncate">
               {session.user?.name?.split(" ")[0]}
             </span>
@@ -78,6 +97,67 @@ export default function Navbar() {
           </>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={() => setIsMobileOpen((prev) => !prev)}
+        className="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-white/20 bg-white/10 text-white"
+        aria-label="Toggle menu"
+        aria-expanded={isMobileOpen}
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {isMobileOpen ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </button>
+      </div>
+
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.nav
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="md:hidden overflow-hidden mt-4 rounded-2xl border border-white/10 bg-black/45 backdrop-blur-xl"
+          >
+            <div className="px-4 py-3 flex flex-col gap-2">
+              {mobileLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMobileOpen(false)}
+                  className="px-3 py-2 rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              {session ? (
+                <button
+                  onClick={() => {
+                    setIsMobileOpen(false);
+                    signOut({ callbackUrl: "/" });
+                  }}
+                  className="mt-2 px-3 py-2 rounded-lg text-left text-red-300 hover:text-red-200 hover:bg-red-500/15 transition-colors"
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  href="/auth/signin"
+                  onClick={() => setIsMobileOpen(false)}
+                  className="mt-2 px-3 py-2 rounded-lg bg-white text-black font-semibold text-center"
+                >
+                  Start for Free
+                </Link>
+              )}
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

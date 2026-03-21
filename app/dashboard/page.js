@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import Prism from "@/components/Prism";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -99,13 +100,45 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
-  return (
-    <div className="min-h-screen bg-[#070709] text-slate-200">
-      <Navbar />
+  const videosUsed = usage?.videos_used ?? 0;
+  const videosLimit = Math.max(usage?.videos_limit ?? 1, 1);
+  const usageRatio = Math.min(videosUsed / videosLimit, 1);
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Welcome Header */}
-        <div className="bg-[#111116] border border-white/10 rounded-2xl p-6 mb-6">
+  const getPlatformIconSrc = (platform) => {
+    const p = String(platform || "").toLowerCase();
+    if (p.includes("youtube")) return "/youtube.png";
+    if (p.includes("instagram")) return "/insta.png";
+    if (p.includes("tiktok")) return "/tiktok.png";
+    if (p.includes("linkedin")) return "/linkedin.png";
+    return null;
+  };
+
+  return (
+    <div className="relative min-h-screen bg-[#070709] text-slate-200 overflow-hidden">
+      {/* Prism Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-50">
+        <Prism
+          animationType="rotate"
+          timeScale={0.5}
+          height={3.5}
+          baseWidth={5.5}
+          scale={3.6}
+          hueShift={0}
+          colorFrequency={1}
+          noise={0}
+          glow={1}
+        />
+      </div>
+      
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-[#070709]/50 z-0 pointer-events-none"></div>
+
+      <div className="relative z-10 w-full h-full">
+        <Navbar />
+
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          {/* Welcome Header */}
+          <div className="bg-white/[0.04] backdrop-blur-2xl border border-white/15 rounded-2xl p-6 mb-6 shadow-[0_15px_50px_rgba(0,0,0,0.35)]">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white mb-1">
@@ -119,13 +152,41 @@ export default function DashboardPage() {
                 plan
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
               {usage && (
-                <div className="bg-[#1a1a24] border border-white/5 rounded-xl px-4 py-2 text-center">
-                  <div className="text-lg font-bold text-white">
-                    {usage.videos_used}/{usage.videos_limit}
+                <div className="relative w-[104px] h-[78px] flex items-center justify-center">
+                  <svg viewBox="0 0 104 62" className="w-full h-full">
+                    <path
+                      d="M 14 54 A 38 38 0 0 1 90 54"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.22)"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      pathLength="100"
+                    />
+                    <path
+                      d="M 14 54 A 38 38 0 0 1 90 54"
+                      fill="none"
+                      stroke="url(#usageGradient)"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      pathLength="100"
+                      strokeDasharray={`${usageRatio * 100} 100`}
+                      style={{ transition: "stroke-dasharray 500ms ease" }}
+                    />
+                    <defs>
+                      <linearGradient id="usageGradient" x1="10" y1="40" x2="70" y2="40" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#7c3aed" />
+                        <stop offset="1" stopColor="#22d3ee" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center mt-6">
+                    <div className="text-[20px] font-extrabold text-white leading-[0.9] tracking-tight">
+                      {videosUsed}/{videosLimit}
+                    </div>
+                    <div className="text-[10px] text-slate-300 mt-0.5">Videos used</div>
                   </div>
-                  <div className="text-xs text-slate-500">Videos used</div>
                 </div>
               )}
               <Link
@@ -139,7 +200,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Analyze New Video Card */}
-        <div className="bg-[#111116] border border-white/10 rounded-2xl p-6 mb-6">
+        <div className="bg-white/[0.04] backdrop-blur-2xl border border-white/15 rounded-2xl p-6 mb-6 shadow-[0_15px_50px_rgba(0,0,0,0.35)]">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-2xl">🎬</span>
             <div>
@@ -203,7 +264,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Adaptations */}
-        <div className="bg-[#111116] border border-white/10 rounded-2xl p-6">
+        <div className="bg-white/[0.04] backdrop-blur-2xl border border-white/15 rounded-2xl p-6 shadow-[0_15px_50px_rgba(0,0,0,0.35)]">
           <h2 className="text-lg font-bold text-white mb-4">
             Recent Adaptations
           </h2>
@@ -217,12 +278,18 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {adaptations.slice(0, 5).map((adaptation) => (
                 <div
                   key={adaptation._id}
-                  className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-white/[0.04] border border-white/10 rounded-xl hover:bg-white/[0.08] transition-colors"
                 >
+                  <img
+                    src={`https://i.ytimg.com/vi/${adaptation.video_id}/mqdefault.jpg`}
+                    alt={adaptation.video_title || "Video thumbnail"}
+                    className="w-24 h-14 rounded-lg object-cover border border-white/10 flex-shrink-0"
+                    loading="lazy"
+                  />
                   <div className="flex-grow min-w-0">
                     <h3 className="text-white font-semibold text-sm truncate">
                       {adaptation.video_title}
@@ -237,10 +304,26 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      {(adaptation.platforms || []).slice(0, 5).map((platform, idx) => {
+                        const src = getPlatformIconSrc(platform);
+                        if (!src) return null;
+                        return (
+                          <img
+                            key={`${platform}-${idx}`}
+                            src={src}
+                            alt={String(platform)}
+                            title={String(platform)}
+                            className="w-3.5 h-3.5 object-contain opacity-90"
+                            loading="lazy"
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                   <Link
                     href={`/adapt/${adaptation.video_id}`}
-                    className="px-3 py-1.5 text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors ml-3"
+                    className="px-3 py-1.5 text-xs font-bold text-indigo-300 bg-indigo-500/20 border border-indigo-400/20 rounded-lg hover:bg-indigo-500/30 transition-colors ml-1"
                   >
                     View
                   </Link>
@@ -250,7 +333,7 @@ export default function DashboardPage() {
               {adaptations.length > 5 && (
                 <Link
                   href="/history"
-                  className="block text-center text-sm text-indigo-400 font-semibold hover:text-indigo-300 transition-colors py-2"
+                  className="md:col-span-2 block text-center text-sm text-indigo-400 font-semibold hover:text-indigo-300 transition-colors py-2"
                 >
                   View all {adaptations.length} adaptations →
                 </Link>
@@ -263,7 +346,7 @@ export default function DashboardPage() {
       {/* Limit Reached Modal */}
       {showLimitModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111116] border border-white/10 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+          <div className="bg-[#111116]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 max-w-md w-full shadow-2xl">
             <div className="text-center">
               <div className="text-4xl mb-4">🚫</div>
               <h2 className="text-xl font-bold text-white mb-2">
@@ -303,6 +386,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
