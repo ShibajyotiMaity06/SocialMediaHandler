@@ -5,6 +5,40 @@ import { callGemini, callGroq } from '../lib/ai-client';
 import { getAdaptationPrompt, getPPSPrompt } from '../lib/prompts';
 import { getCached, setCached, CACHE_KEYS } from '../lib/cache';
 
+function parseModelJson(raw, label) {
+  if (raw && typeof raw === 'object') return raw;
+
+  const text = String(raw ?? '').trim();
+  if (!text) {
+    throw new Error(`${label} returned empty response`);
+  }
+
+  const candidates = [];
+  candidates.push(text);
+
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenced?.[1]) candidates.push(fenced[1].trim());
+
+  const objectMatch = text.match(/\{[\s\S]*\}/);
+  if (objectMatch?.[0]) candidates.push(objectMatch[0].trim());
+
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  if (arrayMatch?.[0]) candidates.push(arrayMatch[0].trim());
+
+  const tried = new Set();
+  for (const candidate of candidates) {
+    if (!candidate || tried.has(candidate)) continue;
+    tried.add(candidate);
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // try next candidate
+    }
+  }
+
+  throw new Error(`${label} returned invalid JSON`);
+}
+
 export async function POST(req) {
   try {
     const { platforms, extractedContent, videoId } = await req.json();
@@ -43,7 +77,7 @@ export async function POST(req) {
           { temperature: 0.7 }
         );
 
-        const adaptation = JSON.parse(adaptationRaw);
+        const adaptation = parseModelJson(adaptationRaw, `${platform} adaptation`);
 
         // Calculate PPS
         const ppsPrompt = getPPSPrompt(platform, adaptation, extractedContent);
@@ -53,13 +87,18 @@ export async function POST(req) {
           { role: 'user', content: ppsPrompt.user },
         ], { temperature: 0.1 });
 
-        const pps = JSON.parse(ppsRaw);
+        const pps = parseModelJson(ppsRaw, `${platform} PPS`);
+
+        const hooks = Array.isArray(adaptation.hooks)
+          ? adaptation.hooks.filter(Boolean)
+          : [];
 
         adaptations.push({
           platform,
           ...adaptation,
+          hooks,
           pps,
-          selectedHook: adaptation.hooks[0],
+          selectedHook: hooks[0] || adaptation.selectedHook || adaptation.mainPost || '',
         });
 
         // Delay between platforms to avoid rate limits

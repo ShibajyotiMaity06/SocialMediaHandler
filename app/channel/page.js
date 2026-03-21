@@ -47,40 +47,39 @@ export default async function ChannelQueryPage({ searchParams }) {
   return (
     <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       {/* Channel Header Card */}
-      <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-gray-200/50 dark:border-slate-800/50 rounded-3xl p-6 sm:p-10 mb-10 shadow-xl relative overflow-hidden flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 pointer-events-none"></div>
+      <div className="bg-gradient-to-r from-indigo-950/60 via-[#271556]/60 to-slate-950/60 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-6 md:p-8 mb-8 shadow-[0_0_30px_rgba(99,102,241,0.1)] flex flex-col md:flex-row items-center gap-6 md:gap-8">
         
-        {/* Profile Image (Placeholder since API doesn't return avatar, but we'll use a neat gradient circle) */}
-        <div className="relative z-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-blue-500 flex-shrink-0 to-purple-600 flex items-center justify-center text-white text-4xl sm:text-5xl font-bold shadow-lg border-4 border-white dark:border-slate-800">
+        {/* Profile Image */}
+        <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-[#22d3ee] to-[#a855f7] flex flex-shrink-0 items-center justify-center text-white text-5xl font-black shadow-[0_0_20px_rgba(168,85,247,0.3)]">
           {channelData.title.charAt(0).toUpperCase()}
         </div>
 
-        <div className="relative z-10 flex-grow text-center sm:text-left">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mt-2 mb-6">
+        <div className="flex-grow flex flex-col justify-center text-center md:text-left w-full">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
             {channelData.title}
           </h1>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 auto-rows-fr">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
             {/* Metric Card 1 */}
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-700/50 shadow-sm flex flex-col items-center justify-center">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Subscribers</span>
-              <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="bg-white/[0.03] backdrop-blur-md rounded-xl p-3 border border-white/10 flex flex-col items-center justify-center shadow-lg">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-300 mb-1">Subscribers</span>
+              <span className="text-xl sm:text-2xl font-bold text-white">
                 {channelData.subscriberCount ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(channelData.subscriberCount) : "Hidden"}
               </span>
             </div>
             
             {/* Metric Card 2 */}
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-700/50 shadow-sm flex flex-col items-center justify-center">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Total Views</span>
-              <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="bg-white/[0.03] backdrop-blur-md rounded-xl p-3 border border-white/10 flex flex-col items-center justify-center shadow-lg">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-300 mb-1">Total Views</span>
+              <span className="text-xl sm:text-2xl font-bold text-white">
                 {new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(channelData.viewCount)}
               </span>
             </div>
 
             {/* Metric Card 3 */}
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-4 border border-gray-100 dark:border-slate-700/50 shadow-sm flex flex-col items-center justify-center col-span-2 md:col-span-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Videos</span>
-              <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="bg-white/[0.03] backdrop-blur-md rounded-xl p-3 border border-white/10 flex flex-col items-center justify-center shadow-lg">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-300 mb-1">Videos</span>
+              <span className="text-xl sm:text-2xl font-bold text-white">
                 {new Intl.NumberFormat().format(channelData.videoCount || 0)}
               </span>
             </div>

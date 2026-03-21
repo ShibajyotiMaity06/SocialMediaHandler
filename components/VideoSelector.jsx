@@ -30,107 +30,89 @@ export default function VideoSelector({ videos }) {
 
   const selectedVideoTitle = videos.find((video) => getVideoId(video) === selectedVideo)?.snippet?.title;
 
-  const handleAnalyze = () => {
-    if (selectedVideo) {
-      router.push(`/adapt/${selectedVideo}`);
+  const handleAnalyze = (videoId) => {
+    if (videoId) {
+      router.push(`/adapt/${videoId}`);
     }
   };
 
   return (
     <div className="mt-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recent Videos</h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Select a video to AI-analyze and repurpose</p>
-        </div>
-        
-        {selectedVideo && (
-          <button
-            onClick={handleAnalyze}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 px-6 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:-translate-y-0.5 whitespace-nowrap flex items-center gap-2"
-          >
-            <span>✨ AI Adapt</span>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-          </button>
-        )}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-white mb-1">Recent Videos</h2>
+        <p className="text-sm text-slate-400">Select a video to AI-analyze and repurpose</p>
       </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {videos.map((video) => {
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {videos.map((video, idx) => {
           const videoId = getVideoId(video);
-          const isSelected = selectedVideo === videoId;
           const thumbnailUrl = getThumbnail(video);
           const isDisabled = !videoId;
 
+          // Rotate some mock platforms for UI fidelity based on the screenshot
+          const platforms = [
+            <><span className="font-bold text-slate-300">in</span> Instagram</>,
+            <><svg className="w-3.5 h-3.5 inline mr-1 text-slate-300" viewBox="0 0 24 24" fill="currentColor"><path d="M11.999 7.377a4.623 4.623 0 1 0 0 9.248 4.623 4.623 0 0 0 0-9.248zm0 7.627a3.004 3.004 0 1 1 0-6.008 3.004 3.004 0 0 1 0 6.008z" /><circle cx="15.61" cy="8.39" r="1.09" /><path d="M11.999 2.1c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.012-3.584.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.1c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z" /></svg> Instagram</>,
+            <><span className="font-bold text-slate-300">𝕏</span> Instagram</>,
+            <><span className="font-bold text-slate-300">in</span> Instagram</>,
+          ];
+          const mockPlatform = platforms[idx % platforms.length];
+
           return (
             <div
-              key={`${videoId || 'invalid'}-${video?.snippet?.publishedAt || video?.snippet?.title}`}
-              onClick={() => {
-                if (!isDisabled) {
-                  setSelectedVideo(videoId);
-                }
-              }}
-              role="button"
-              aria-pressed={isSelected}
-              tabIndex={isDisabled ? -1 : 0}
-              onKeyDown={(event) => {
-                if (!isDisabled && (event.key === 'Enter' || event.key === ' ')) {
-                  event.preventDefault();
-                  setSelectedVideo(videoId);
-                }
-              }}
+              key={`${videoId || 'invalid'}-${idx}`}
               className={`
-                group relative flex flex-col bg-white dark:bg-slate-800/50 backdrop-blur-sm
-                rounded-2xl overflow-hidden transition-all duration-300 border-2
-                ${isSelected 
-                  ? 'border-blue-500 shadow-xl shadow-blue-500/20 translate-y-[-4px]' 
-                  : 'border-transparent shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-slate-700 hover:translate-y-[-2px]'
-                }
-                ${isDisabled ? 'opacity-50 cursor-not-allowed grayscale' : 'cursor-pointer'}
+                flex flex-col bg-[#111116] border border-white/10 rounded-2xl overflow-hidden
+                transition-all duration-300 hover:border-indigo-500/50 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]
+                ${isDisabled ? 'opacity-50 grayscale' : ''}
               `}
             >
-              {isSelected && (
-                <div className="absolute top-3 right-3 z-20 bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg transform scale-in">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                </div>
-              )}
-
-              <div className="relative aspect-video w-full overflow-hidden bg-gray-100 dark:bg-slate-700">
+              <div className="relative aspect-video w-full overflow-hidden bg-[#1a1a24]">
                 {thumbnailUrl ? (
                   <img
                     src={thumbnailUrl}
                     alt={video?.snippet?.title || 'Video thumbnail'}
-                    className={`w-full h-full object-cover transition-transform duration-500 ${!isDisabled && !isSelected && 'group-hover:scale-105'} ${isSelected && 'scale-105 filter brightness-110'}`}
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <svg className="w-12 h-12 opacity-50" fill="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m18-5l-4.5-4.5M21 10v9m0-9H3m18 0l-4.5 4.5" /></svg>
+                  <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m18-5l-4.5-4.5M21 10v9m0-9H3m18 0l-4.5 4.5" /></svg>
                   </div>
                 )}
-                <div className={`absolute inset-0 bg-blue-600/20 mix-blend-overlay transition-opacity duration-300 ${isSelected ? 'opacity-100' : 'opacity-0'}`}></div>
               </div>
 
               <div className="p-4 flex flex-col flex-grow">
-                <h3 className={`font-bold line-clamp-2 leading-snug mb-2 ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight mb-2">
                   {video?.snippet?.title || 'Untitled video'}
                 </h3>
-                
-                <div className="mt-auto flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  <span className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    {video?.snippet?.publishedAt ? new Date(video.snippet.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown date'}
-                  </span>
-                  
-                  {isSelected && (
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">Selected</span>
-                  )}
+
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-3 font-medium">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  {video?.snippet?.publishedAt ? new Date(video.snippet.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown date'}
+                </div>
+
+                <div className="flex flex-col gap-2 mb-4 mt-1">
+                  <div className="flex items-center text-red-500">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.86-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M9.996,15.005l0-6.01l5.518,3.005L9.996,15.005z" /></svg>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                    {mockPlatform}
+                  </div>
+                </div>
+
+                <div className="mt-auto">
+                  <button
+                    onClick={() => !isDisabled && handleAnalyze(videoId)}
+                    className={`w-full py-2.5 rounded-xl bg-gradient-to-r from-[#22d3ee] to-[#a855f7] text-white font-bold text-sm tracking-wide transition-opacity flex justify-center items-center gap-1 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
+                  >
+                    Generate AI Hooks <span className="text-base ml-0.5">✨</span>
+                  </button>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-
     </div>
   );
 }

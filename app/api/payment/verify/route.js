@@ -103,7 +103,7 @@ export async function POST(request) {
           },
           $inc: { images_limit: addon.credits },
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: "after" }
       );
 
       return NextResponse.json({
@@ -148,7 +148,7 @@ export async function POST(request) {
         razorpay_order_id: razorpay_order_id,
         razorpay_payment_id: razorpay_payment_id,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     // Update user tier
@@ -166,7 +166,7 @@ export async function POST(request) {
         videos_limit: limits.videos,
         images_limit: limits.images,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     return NextResponse.json({

@@ -56,17 +56,17 @@ export default function Home() {
       {/* Demo Video Section */}
       <section id="demo" className="relative z-20 container mx-auto px-6 -mt-16 mb-32">
         <div className="max-w-5xl mx-auto aspect-video bg-[#0f0f13] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden relative group flex items-center justify-center cursor-pointer hover:border-white/20 transition-all duration-500">
-          <div className="absolute inset-0 bg-gradient-to-t from-[#070709] via-transparent to-transparent opacity-80 z-10 pointer-events-none"></div>
-          {/* Subtle grid in video placeholder */}
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsIDI1NSwgMjU1LCAwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 group-hover:opacity-30 transition-opacity"></div>
-          
-          <div className="absolute w-40 h-40 bg-indigo-500/30 blur-[60px] rounded-full z-0 group-hover:bg-purple-500/30 transition-colors duration-700"></div>
-          
-          <div className="relative z-20 w-20 h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] group-hover:scale-110 group-hover:bg-white transition-all duration-500">
-            <svg className="w-8 h-8 text-white group-hover:text-indigo-600 ml-1 transition-colors" fill="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
-            </svg>
-          </div>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="/demo.mp4" type="video/mp4" />
+          </video>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-[#070709]/75 via-transparent to-transparent z-10 pointer-events-none"></div>
           <div className="absolute bottom-6 left-8 z-20">
             <div className="px-4 py-2 bg-black/40 backdrop-blur-md border border-white/10 text-white text-xs font-bold rounded-lg uppercase tracking-widest flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>

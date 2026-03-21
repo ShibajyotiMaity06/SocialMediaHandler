@@ -275,7 +275,15 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
                       }`}
                   >
                     <div className="flex flex-col items-center justify-center gap-3 h-full">
-                      <span className={`text-3xl ${isSelected ? 'text-indigo-400' : 'opacity-70'}`}>{config.icon}</span>
+                      {config.iconImage ? (
+                        <img
+                          src={config.iconImage}
+                          alt={config.name}
+                          className={`w-8 h-8 object-contain ${isSelected ? 'opacity-100' : 'opacity-75'}`}
+                        />
+                      ) : (
+                        <span className={`text-3xl ${isSelected ? 'text-indigo-400' : 'opacity-70'}`}>{config.icon}</span>
+                      )}
                       <span className={`font-bold text-sm ${isSelected ? 'text-indigo-300' : 'text-slate-400'}`}>{config.name}</span>
                     </div>
                   </div>
@@ -331,7 +339,11 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
                     ${isActive ? 'text-white' : 'text-slate-500 hover:text-slate-300'}
                   `}
                 >
-                  <span className="text-lg opacity-80">{config.icon}</span>
+                  {config.iconImage ? (
+                    <img src={config.iconImage} alt={config.name} className="w-4 h-4 object-contain opacity-90" />
+                  ) : (
+                    <span className="text-lg opacity-80">{config.icon}</span>
+                  )}
                   {config.name}
                   {/* Glowing Active Indicator underneath the tab */}
                   {isActive && (

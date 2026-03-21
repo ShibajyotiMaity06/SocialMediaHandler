@@ -12,6 +12,7 @@ export const PLATFORM_CONFIG = {
   linkedin: {
     name: 'LinkedIn',
     icon: 'in',
+    iconImage: '/linkedin.png',
     color: 'bg-blue-600 text-white',
     charLimit: 3000,
     hashtagCount: 5,
@@ -20,6 +21,7 @@ export const PLATFORM_CONFIG = {
   tiktok: {
     name: 'TikTok',
     icon: '📱',
+    iconImage: '/tiktok.png',
     color: 'bg-black text-white',
     charLimit: 150,
     hashtagCount: 5,
@@ -28,6 +30,7 @@ export const PLATFORM_CONFIG = {
   instagram: {
     name: 'Instagram',
     icon: '📷',
+    iconImage: '/insta.png',
     color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
     charLimit: 2200,
     hashtagCount: 30,
@@ -36,6 +39,7 @@ export const PLATFORM_CONFIG = {
   youtube_shorts: {
     name: 'YouTube Shorts',
     icon: '▶️',
+    iconImage: '/youtube.png',
     color: 'bg-red-600 text-white',
     charLimit: 100,
     hashtagCount: 3,

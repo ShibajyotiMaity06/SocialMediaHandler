@@ -136,7 +136,7 @@ export async function POST(request) {
     const updatedUsage = await Usage.findOneAndUpdate(
       { _id: usage._id, images_used: { $lt: usage.images_limit } },
       { $inc: { images_used: 1 } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!updatedUsage) {

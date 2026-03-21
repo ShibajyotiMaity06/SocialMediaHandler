@@ -33,7 +33,7 @@ export async function POST() {
           images_limit: limits.images,
         },
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     return NextResponse.json({

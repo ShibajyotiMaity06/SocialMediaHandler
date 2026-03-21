@@ -7,7 +7,6 @@ import Trend from "../../lib/models/Trend";
 const ALLOWED_ADMIN_EMAILS = new Set([
   "shibajyoti.maity06@gmail.com",
   "dipakmaity903@gmail.com",
-  "debajyoti.maity29@gmail.com",
 ]);
 
 function normalizeTags(tags) {

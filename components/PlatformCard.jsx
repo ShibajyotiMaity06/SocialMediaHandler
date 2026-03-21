@@ -69,7 +69,11 @@ export default function PlatformCard({
     return (
       <div className="bg-red-50/5 dark:bg-red-900/10 backdrop-blur-xl border border-red-500/20 rounded-3xl p-8">
         <div className="flex items-center gap-3 mb-3 text-red-400">
-          <span className="text-3xl">{config.icon}</span>
+          {config.iconImage ? (
+            <img src={config.iconImage} alt={config.name} className="w-8 h-8 object-contain" />
+          ) : (
+            <span className="text-3xl">{config.icon}</span>
+          )}
           <h3 className="font-bold text-xl">{config.name}</h3>
         </div>
         <p className="text-red-300 font-medium leading-relaxed">{adaptation.error}</p>

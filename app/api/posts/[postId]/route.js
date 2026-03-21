@@ -69,7 +69,7 @@ export async function PATCH(request, { params }) {
         scheduled_at: scheduledAt,
         status: "scheduled",
       },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!post) {
