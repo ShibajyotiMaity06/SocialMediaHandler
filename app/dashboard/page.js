@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Prism from "@/components/Prism";
+import ConnectXButton from "@/components/ConnectXButton";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -153,6 +154,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-5">
+              <ConnectXButton />
               {usage && (
                 <div className="relative w-[104px] h-[78px] flex items-center justify-center">
                   <svg viewBox="0 0 104 62" className="w-full h-full">

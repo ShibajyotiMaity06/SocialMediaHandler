@@ -61,10 +61,30 @@ const PostSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["draft", "scheduled", "published"],
+      enum: ["draft", "scheduled", "publishing", "published", "failed"],
       default: "scheduled",
       required: true,
       index: true,
+    },
+    queue_job_id: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    external_post_id: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    last_error: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    publish_attempts: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {

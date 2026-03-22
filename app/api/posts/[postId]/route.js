@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import dbConnect from "../../lib/mongodb";
 import User from "../../lib/models/User";
 import Post from "../../lib/models/Post";
+import { cancelXPostJob, enqueueXPost } from "../../lib/queue";
+import { isXConnected } from "../../lib/x-client";
 
 function parseScheduledAt(date, time) {
   if (!date || !time) return null;
@@ -28,6 +30,11 @@ function toClientPost(postDoc) {
     content: postDoc.content || "",
     status: postDoc.status,
   };
+}
+
+function isXPlatform(platform) {
+  const normalized = String(platform || "").toLowerCase();
+  return normalized === "twitter" || normalized === "x";
 }
 
 export async function PATCH(request, { params }) {
@@ -59,6 +66,33 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const existingPost = await Post.findOne({ _id: postId, user_id: user._id });
+    if (!existingPost) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    const xPost = isXPlatform(platform);
+    if (xPost && !content?.trim()) {
+      return NextResponse.json(
+        { error: "Post text is required for X/Twitter posts" },
+        { status: 400 }
+      );
+    }
+
+    if (xPost) {
+      const connected = await isXConnected(user._id);
+      if (!connected) {
+        return NextResponse.json(
+          { error: "Connect X account before scheduling X posts" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (existingPost.queue_job_id) {
+      await cancelXPostJob(existingPost.queue_job_id);
+    }
+
     const post = await Post.findOneAndUpdate(
       { _id: postId, user_id: user._id },
       {
@@ -68,12 +102,31 @@ export async function PATCH(request, { params }) {
         content: typeof content === "string" ? content.trim() : "",
         scheduled_at: scheduledAt,
         status: "scheduled",
+        queue_job_id: "",
+        last_error: "",
       },
       { returnDocument: "after" }
     );
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    if (xPost) {
+      const delayMs = Math.max(0, scheduledAt.getTime() - Date.now());
+      const job = await enqueueXPost(
+        {
+          userId: user._id.toString(),
+          postId: post._id.toString(),
+          platform: "x",
+          content: content.trim(),
+          scheduledAt: scheduledAt.toISOString(),
+        },
+        delayMs
+      );
+
+      post.queue_job_id = String(job.id || "");
+      await post.save();
     }
 
     return NextResponse.json({ post: toClientPost(post) });
@@ -102,6 +155,10 @@ export async function DELETE(_request, { params }) {
     const deleted = await Post.findOneAndDelete({ _id: postId, user_id: user._id });
     if (!deleted) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    if (deleted.queue_job_id) {
+      await cancelXPostJob(deleted.queue_job_id);
     }
 
     return NextResponse.json({ success: true });

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "worker:x": "node --env-file=.env scripts/x-worker.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
@@ -14,6 +15,7 @@
     "@google/generative-ai": "^0.24.1",
     "@huggingface/inference": "^4.13.15",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.71.0",
     "framer-motion": "^12.38.0",
     "google-auth-library": "^10.6.2",
     "googleapis": "^171.4.0",
