@@ -5,6 +5,12 @@ import dbConnect from "../../lib/mongodb";
 import User from "../../lib/models/User";
 import Subscription from "../../lib/models/Subscription";
 import Usage from "../../lib/models/Usage";
+import getRazorpay from "../../lib/razorpay";
+import {
+  normalizeReferralCode,
+  isValidReferralCodeFormat,
+  recordReferralRedemption,
+} from "../../lib/referrals";
 import {
   ADDON_PACKS,
   getCurrentMonth,
@@ -73,6 +79,18 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
+    let razorpayOrder = null;
+    try {
+      razorpayOrder = await getRazorpay().orders.fetch(razorpay_order_id);
+    } catch (orderFetchError) {
+      console.error("[PAYMENT VERIFY] Failed to fetch Razorpay order", orderFetchError);
+    }
+
+    const referralCode = normalizeReferralCode(
+      razorpayOrder?.notes?.referral_code || ""
+    );
+    const hasReferralCode = isValidReferralCodeFormat(referralCode);
 
     // Signature verified — payment is legit
     await dbConnect();
@@ -147,6 +165,7 @@ export async function POST(request) {
         current_period_end: periodEnd,
         razorpay_order_id: razorpay_order_id,
         razorpay_payment_id: razorpay_payment_id,
+        referral_code: hasReferralCode ? referralCode : null,
       },
       { upsert: true, returnDocument: "after" }
     );
@@ -168,6 +187,28 @@ export async function POST(request) {
       },
       { upsert: true, returnDocument: "after" }
     );
+
+    if (hasReferralCode) {
+      const discountPercent = Number(
+        razorpayOrder?.notes?.referral_discount_percent || 10
+      );
+      const originalAmountPaise = Number(
+        razorpayOrder?.notes?.original_amount_paise || razorpayOrder?.amount || 0
+      );
+      const chargedAmountPaise = Number(razorpayOrder?.amount || 0);
+
+      await recordReferralRedemption({
+        referralCode,
+        purchaserUserId: user._id,
+        tier,
+        paymentProvider: "razorpay",
+        paymentReference: razorpay_payment_id,
+        currency: "INR",
+        amountOriginal: originalAmountPaise,
+        amountCharged: chargedAmountPaise,
+        discountPercent,
+      });
+    }
 
     return NextResponse.json({
       success: true,

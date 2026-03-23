@@ -5,6 +5,11 @@ import User from "../../lib/models/User";
 import Subscription from "../../lib/models/Subscription";
 import Usage from "../../lib/models/Usage";
 import { ADDON_PACKS, getCurrentMonth, TIER_LIMITS } from "../../lib/helpers";
+import {
+  normalizeReferralCode,
+  isValidReferralCodeFormat,
+  recordReferralRedemption,
+} from "../../lib/referrals";
 
 function resolveWebhookMetadata(payload) {
   const data = payload?.data || {};
@@ -16,6 +21,10 @@ function resolveWebhookMetadata(payload) {
     tier: data.metadata?.tier || "",
     kind: data.metadata?.kind || "subscription",
     addonKey: data.metadata?.addon_key || "",
+    referralCode: data.metadata?.referral_code || "",
+    referralDiscountPercent: data.metadata?.referral_discount_percent || "",
+    originalAmountCents: data.metadata?.original_amount_cents || "",
+    chargedAmountCents: data.metadata?.charged_amount_cents || "",
   };
 }
 
@@ -38,6 +47,9 @@ export async function POST(request) {
     ) {
       const user = await User.findOne({ email: metadata.userEmail.toLowerCase() });
       if (user) {
+        const referralCode = normalizeReferralCode(metadata.referralCode);
+        const hasReferralCode = isValidReferralCodeFormat(referralCode);
+
         const now = new Date();
         const periodEnd = new Date(now);
         periodEnd.setMonth(periodEnd.getMonth() + 1);
@@ -54,6 +66,7 @@ export async function POST(request) {
             currency: "USD",
             dodo_payment_id: metadata.paymentId,
             dodo_checkout_session_id: metadata.orderId,
+            referral_code: hasReferralCode ? referralCode : null,
           },
           { upsert: true }
         );
@@ -73,6 +86,20 @@ export async function POST(request) {
           },
           { upsert: true }
         );
+
+        if (hasReferralCode && metadata.paymentId) {
+          await recordReferralRedemption({
+            referralCode,
+            purchaserUserId: user._id,
+            tier: metadata.tier,
+            paymentProvider: "dodo",
+            paymentReference: metadata.paymentId,
+            currency: "USD",
+            amountOriginal: Number(metadata.originalAmountCents || 0),
+            amountCharged: Number(metadata.chargedAmountCents || 0),
+            discountPercent: Number(metadata.referralDiscountPercent || 10),
+          });
+        }
       }
     }
 

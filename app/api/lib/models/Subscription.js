@@ -69,6 +69,14 @@ const SubscriptionSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    referral_code: {
+      type: String,
+      default: null,
+      trim: true,
+      uppercase: true,
+      minlength: 5,
+      maxlength: 5,
+    },
   },
   {
     timestamps: true,

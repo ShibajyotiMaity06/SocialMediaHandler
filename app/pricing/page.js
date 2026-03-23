@@ -179,6 +179,25 @@ const plans = [
   },
 ];
 
+const PAID_SUBSCRIPTION_TIERS = new Set(["growth", "creator", "pro", "agency"]);
+
+const planAmounts = {
+  growth: { INR: 1900, USD: 19 },
+  creator: { INR: 4900, USD: 49 },
+  pro: { INR: 11900, USD: 119 },
+  agency: { INR: 9900, USD: 99 },
+};
+
+function formatCurrencyAmount(amount, currency) {
+  if (currency === "INR") {
+    return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+  }
+
+  const numeric = Number(amount || 0);
+  const fixed = Number.isInteger(numeric) ? numeric.toFixed(0) : numeric.toFixed(2);
+  return `$${fixed}`;
+}
+
 function loadRazorpayScript() {
   return new Promise((resolve) => {
     if (document.getElementById("razorpay-sdk")) {
@@ -203,6 +222,10 @@ export default function PricingPage() {
   const [manualCurrency, setManualCurrency] = useState("");
   const [countryCode, setCountryCode] = useState("");
   const [loadingPaymentContext, setLoadingPaymentContext] = useState(true);
+  const [referralInput, setReferralInput] = useState("");
+  const [applyingReferral, setApplyingReferral] = useState(false);
+  const [appliedReferral, setAppliedReferral] = useState(null);
+  const [referralMessage, setReferralMessage] = useState("");
   const normalizedUserEmail = session?.user?.email?.toLowerCase();
   const canSeeTestTier = Boolean(
     normalizedUserEmail && TEST_TIER_ALLOWED_EMAILS.has(normalizedUserEmail)
@@ -285,6 +308,10 @@ export default function PricingPage() {
           tier,
           addonKey,
           currencyPreference: activeCurrency,
+          referralCode:
+            kind === "subscription" && PAID_SUBSCRIPTION_TIERS.has(tier)
+              ? appliedReferral?.code || ""
+              : "",
         }),
       });
 
@@ -382,6 +409,57 @@ export default function PricingPage() {
       setError(err.message);
       setLoading(null);
     }
+  };
+
+  const handleApplyReferral = async () => {
+    const code = String(referralInput || "").trim().toUpperCase();
+    setReferralMessage("");
+
+    if (!code) {
+      setReferralMessage("Enter a referral code first.");
+      setAppliedReferral(null);
+      return;
+    }
+
+    if (!/^[A-Z]{5}$/.test(code)) {
+      setReferralMessage("Referral code must be 5 uppercase letters.");
+      setAppliedReferral(null);
+      return;
+    }
+
+    setApplyingReferral(true);
+    try {
+      const res = await fetch("/api/referral/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        setAppliedReferral(null);
+        setReferralMessage(data.error || "Referral code is not present.");
+        return;
+      }
+
+      setAppliedReferral({
+        code: data.code,
+        discountPercent: Number(data.discount_percent || 10),
+      });
+      setReferralInput(data.code);
+      setReferralMessage(`Referral code applied: ${data.code} (10% off paid plans).`);
+    } catch {
+      setAppliedReferral(null);
+      setReferralMessage("Could not validate referral code right now.");
+    } finally {
+      setApplyingReferral(false);
+    }
+  };
+
+  const clearReferral = () => {
+    setReferralInput("");
+    setAppliedReferral(null);
+    setReferralMessage("");
   };
 
   const handlePayment = async (plan) => {
@@ -494,6 +572,55 @@ export default function PricingPage() {
                     recommendedCurrency === "INR" ? "Razorpay" : "Dodo Payments"
                   }.`}
             </div>
+
+            <div className="w-full max-w-md rounded-2xl border border-cyan-400/25 bg-cyan-500/5 px-4 py-4 text-left">
+              <div className="text-xs uppercase tracking-[0.2em] text-cyan-300 font-bold mb-2">
+                Referral Code
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={referralInput}
+                  onChange={(event) => setReferralInput(event.target.value.toUpperCase())}
+                  maxLength={5}
+                  placeholder="Add your referral code"
+                  className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold tracking-widest text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyReferral}
+                  disabled={applyingReferral || loading !== null}
+                  className={`px-3 py-2 rounded-xl text-sm font-bold transition-colors ${
+                    applyingReferral
+                      ? "bg-cyan-700 text-white cursor-wait"
+                      : "bg-cyan-500 text-black hover:bg-cyan-400"
+                  }`}
+                >
+                  {applyingReferral ? "Checking" : "Apply"}
+                </button>
+                {appliedReferral && (
+                  <button
+                    type="button"
+                    onClick={clearReferral}
+                    className="px-3 py-2 rounded-xl text-sm font-bold border border-white/20 text-white hover:bg-white/10"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="mt-2 text-xs text-slate-400">
+                Applies 10% off only on paid subscription plans.
+              </div>
+              {referralMessage && (
+                <div
+                  className={`mt-2 text-xs font-medium ${
+                    appliedReferral ? "text-emerald-300" : "text-rose-300"
+                  }`}
+                >
+                  {referralMessage}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -518,6 +645,12 @@ export default function PricingPage() {
             const isLoading = loading === plan.tier;
             const isPaid = plan.tier !== "free";
             const isLocked = Boolean(plan.locked);
+            const hasReferralDiscount =
+              Boolean(appliedReferral?.code) && PAID_SUBSCRIPTION_TIERS.has(plan.tier);
+            const baseAmount = planAmounts[plan.tier]?.[activeCurrency];
+            const discountedAmount = hasReferralDiscount && Number.isFinite(baseAmount)
+              ? baseAmount * (1 - Number(appliedReferral.discountPercent || 10) / 100)
+              : null;
 
             return (
               <div
@@ -549,9 +682,20 @@ export default function PricingPage() {
                   {/* Dual currency pricing */}
                   <div className="mb-2">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-black tracking-tight">
-                        {activeCurrency === "INR" ? plan.priceINR : plan.priceUSD}
-                      </span>
+                      {discountedAmount !== null ? (
+                        <>
+                          <span className="text-5xl font-black tracking-tight text-cyan-300">
+                            {formatCurrencyAmount(discountedAmount, activeCurrency)}
+                          </span>
+                          <span className="text-lg text-slate-500 line-through">
+                            {activeCurrency === "INR" ? plan.priceINR : plan.priceUSD}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-5xl font-black tracking-tight">
+                          {activeCurrency === "INR" ? plan.priceINR : plan.priceUSD}
+                        </span>
+                      )}
                       <span className="text-slate-500 font-medium">
                         {plan.period === "one-time" ? "one-time" : "/mo"}
                       </span>
@@ -561,6 +705,11 @@ export default function PricingPage() {
                         {activeCurrency === "INR"
                           ? `≈ ${plan.priceUSD} USD`
                           : `≈ ${plan.priceINR} INR`}
+                      </div>
+                    )}
+                    {discountedAmount !== null && (
+                      <div className="mt-1 text-xs font-bold uppercase tracking-wider text-cyan-300">
+                        Referral applied: {appliedReferral.discountPercent}% off
                       </div>
                     )}
                   </div>
