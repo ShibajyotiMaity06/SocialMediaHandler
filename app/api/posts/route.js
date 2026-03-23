@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import dbConnect from "../lib/mongodb";
 import User from "../lib/models/User";
 import Post from "../lib/models/Post";
-import { enqueueXPost } from "../lib/queue";
+import { enqueueSocialPost } from "../lib/queue";
 import { isXConnected } from "../lib/x-client";
 
 function toClientPost(postDoc) {
@@ -124,7 +124,7 @@ export async function POST(request) {
 
     if (xPost) {
       const delayMs = Math.max(0, scheduledAt.getTime() - Date.now());
-      const job = await enqueueXPost(
+      const job = await enqueueSocialPost(
         {
           userId: user._id.toString(),
           postId: post._id.toString(),

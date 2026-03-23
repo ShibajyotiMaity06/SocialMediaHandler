@@ -92,6 +92,10 @@ function isPastDateKey(dateKey) {
   return target < todayAtMidnight;
 }
 
+function isLinkedInPlatform(platform) {
+  return String(platform || "").toLowerCase() === "linkedin";
+}
+
 function ScheduledPageContent() {
   const { status } = useSession();
   const router = useRouter();
@@ -105,6 +109,7 @@ function ScheduledPageContent() {
   const [usage, setUsage] = useState(null);
   const [hoveredDate, setHoveredDate] = useState(null);
   const [feedback, setFeedback] = useState("");
+  const [toast, setToast] = useState({ show: false, message: "", tone: "info" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalState, setModalState] = useState({
@@ -122,6 +127,7 @@ function ScheduledPageContent() {
   });
 
   const prefillDoneRef = useRef(false);
+  const toastTimeoutRef = useRef(null);
 
   const isLockedTier = usage && usage.tier === "free";
 
@@ -166,6 +172,14 @@ function ScheduledPageContent() {
       loadData();
     }
   }, [status, loadData]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (status !== "authenticated" || loading || prefillDoneRef.current) {
@@ -238,19 +252,15 @@ function ScheduledPageContent() {
   }, [posts]);
 
   function openAddModal(dateKey) {
-    if (isLockedTier) {
-      setFeedback("Scheduling is available on Growth and above.");
-      return;
-    }
-
     if (isPastDateKey(dateKey)) {
       setFeedback("Date is over. You can only add posts for today or future dates.");
       return;
     }
 
+    const defaultPlatform = isLockedTier ? "linkedin" : "twitter";
     setForm({
       title: "",
-      platform: "twitter",
+      platform: defaultPlatform,
       date: dateKey,
       time: "09:00",
       notes: "",
@@ -260,7 +270,7 @@ function ScheduledPageContent() {
   }
 
   function openEditModal(post) {
-    if (isLockedTier) {
+    if (isLockedTier && !isLinkedInPlatform(post.platform)) {
       setFeedback("Scheduling is available on Growth and above.");
       return;
     }
@@ -280,9 +290,50 @@ function ScheduledPageContent() {
     setModalState({ open: false, mode: "add", postId: null });
   }
 
+  function showToast(message, tone = "info", durationMs = 1400) {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
+    setToast({ show: true, message, tone });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, durationMs);
+  }
+
+  async function copyAndOpenLinkedInFeed() {
+    const composed =
+      (form.content || "").trim() ||
+      [form.title, form.notes].filter(Boolean).join("\n\n").trim();
+
+    if (!composed) {
+      throw new Error("Add post text (or title) before opening LinkedIn.");
+    }
+
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(composed);
+      showToast("Copied to clipboard. Redirecting to LinkedIn...", "success", 1100);
+      await new Promise((resolve) => setTimeout(resolve, 850));
+    } catch {
+      window.prompt("Clipboard permission denied. Copy this manually:", composed);
+      showToast("Clipboard blocked. Use prompt text, then post on LinkedIn.", "warning", 1800);
+      await new Promise((resolve) => setTimeout(resolve, 900));
+    }
+
+    window.location.href = "https://www.linkedin.com/feed/";
+  }
+
   async function savePost(event) {
     event.preventDefault();
     if (!form.title.trim()) return;
+
+    if (isLockedTier && !isLinkedInPlatform(form.platform)) {
+      setFeedback("Free tier can only use manual LinkedIn flow. Upgrade for auto scheduling.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -311,8 +362,19 @@ function ScheduledPageContent() {
       }
 
       await loadPosts();
-      setFeedback(modalState.mode === "add" ? "Post scheduled." : "Post updated.");
+      const isLinkedIn = isLinkedInPlatform(form.platform);
+      setFeedback(
+        isLinkedIn
+          ? "Post saved. Copied to clipboard and opening LinkedIn feed..."
+          : modalState.mode === "add"
+            ? "Post scheduled."
+            : "Post updated."
+      );
       closeModal();
+
+      if (isLinkedIn) {
+        await copyAndOpenLinkedInFeed();
+      }
     } catch (error) {
       setFeedback(error.message || "Failed to save post.");
     } finally {
@@ -378,7 +440,7 @@ function ScheduledPageContent() {
 
         {isLockedTier && (
           <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Scheduling is locked on Free. Upgrade to Growth to create and manage scheduled posts. {" "}
+            Free tier supports manual LinkedIn flow (copy + open feed). Upgrade to Growth for auto scheduling/publishing. {" "}
             <Link href="/pricing" className="font-bold underline hover:text-amber-100">
               Upgrade now
             </Link>
@@ -685,14 +747,30 @@ function ScheduledPageContent() {
                   >
                     {saving
                       ? "Saving..."
-                      : modalState.mode === "add"
-                        ? "Save Post"
-                        : "Save Changes"}
+                      : isLinkedInPlatform(form.platform)
+                        ? "Copy & Open LinkedIn"
+                        : modalState.mode === "add"
+                          ? "Save Post"
+                          : "Save Changes"}
                   </button>
                 </div>
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {toast.show && (
+        <div
+          className={`fixed z-[70] bottom-5 right-5 max-w-sm px-4 py-3 rounded-xl border text-sm font-medium shadow-lg ${
+            toast.tone === "success"
+              ? "bg-emerald-500/15 border-emerald-400/40 text-emerald-200"
+              : toast.tone === "warning"
+                ? "bg-amber-500/15 border-amber-400/40 text-amber-200"
+                : "bg-cyan-500/15 border-cyan-400/40 text-cyan-200"
+          }`}
+        >
+          {toast.message}
         </div>
       )}
     </div>

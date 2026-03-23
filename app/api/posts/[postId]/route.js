@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import dbConnect from "../../lib/mongodb";
 import User from "../../lib/models/User";
 import Post from "../../lib/models/Post";
-import { cancelXPostJob, enqueueXPost } from "../../lib/queue";
+import { cancelSocialPostJob, enqueueSocialPost } from "../../lib/queue";
 import { isXConnected } from "../../lib/x-client";
 
 function parseScheduledAt(date, time) {
@@ -32,9 +32,9 @@ function toClientPost(postDoc) {
   };
 }
 
-function isXPlatform(platform) {
+function getSocialQueuePlatform(platform) {
   const normalized = String(platform || "").toLowerCase();
-  return normalized === "twitter" || normalized === "x";
+  return normalized === "twitter" || normalized === "x" ? "x" : null;
 }
 
 export async function PATCH(request, { params }) {
@@ -71,15 +71,15 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const xPost = isXPlatform(platform);
-    if (xPost && !content?.trim()) {
+    const queuePlatform = getSocialQueuePlatform(platform);
+    if (queuePlatform === "x" && !content?.trim()) {
       return NextResponse.json(
         { error: "Post text is required for X/Twitter posts" },
         { status: 400 }
       );
     }
 
-    if (xPost) {
+    if (queuePlatform === "x") {
       const connected = await isXConnected(user._id);
       if (!connected) {
         return NextResponse.json(
@@ -90,7 +90,7 @@ export async function PATCH(request, { params }) {
     }
 
     if (existingPost.queue_job_id) {
-      await cancelXPostJob(existingPost.queue_job_id);
+      await cancelSocialPostJob(existingPost.queue_job_id);
     }
 
     const post = await Post.findOneAndUpdate(
@@ -112,13 +112,13 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    if (xPost) {
+    if (queuePlatform) {
       const delayMs = Math.max(0, scheduledAt.getTime() - Date.now());
-      const job = await enqueueXPost(
+      const job = await enqueueSocialPost(
         {
           userId: user._id.toString(),
           postId: post._id.toString(),
-          platform: "x",
+          platform: queuePlatform,
           content: content.trim(),
           scheduledAt: scheduledAt.toISOString(),
         },
@@ -158,7 +158,7 @@ export async function DELETE(_request, { params }) {
     }
 
     if (deleted.queue_job_id) {
-      await cancelXPostJob(deleted.queue_job_id);
+      await cancelSocialPostJob(deleted.queue_job_id);
     }
 
     return NextResponse.json({ success: true });

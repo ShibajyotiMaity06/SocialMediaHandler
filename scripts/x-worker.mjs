@@ -3,9 +3,9 @@ import { Worker } from "bullmq";
 const { default: dbConnect } = await import("../app/api/lib/mongodb.js");
 const { default: Post } = await import("../app/api/lib/models/Post.js");
 const { postToPlatform } = await import("../app/api/lib/platform-poster.js");
-const { getQueueConnection, getXQueueName } = await import("../app/api/lib/queue.js");
+const { getQueueConnection, getSocialQueueName } = await import("../app/api/lib/queue.js");
 
-const queueName = getXQueueName();
+const queueName = getSocialQueueName();
 
 const worker = new Worker(
   queueName,
@@ -53,15 +53,15 @@ const worker = new Worker(
 );
 
 worker.on("ready", () => {
-  console.log(`[X WORKER] ready on queue: ${queueName}`);
+  console.log(`[SOCIAL WORKER] ready on queue: ${queueName}`);
 });
 
 worker.on("completed", (job, result) => {
-  console.log(`[X WORKER] completed job ${job.id}`, result || {});
+  console.log(`[SOCIAL WORKER] completed job ${job.id}`, result || {});
 });
 
 worker.on("failed", async (job, error) => {
-  console.error(`[X WORKER] failed job ${job?.id || "unknown"}`, error?.message || error);
+  console.error(`[SOCIAL WORKER] failed job ${job?.id || "unknown"}`, error?.message || error);
 
   const postId = job?.data?.postId;
   if (!postId) return;
@@ -74,13 +74,13 @@ worker.on("failed", async (job, error) => {
       publish_attempts: Number(job?.attemptsMade || 0),
     });
   } catch (updateError) {
-    console.error("[X WORKER] failed to update failed post", updateError);
+    console.error("[SOCIAL WORKER] failed to update failed post", updateError);
   }
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, async () => {
-    console.log(`[X WORKER] shutting down (${signal})`);
+    console.log(`[SOCIAL WORKER] shutting down (${signal})`);
     await worker.close();
     process.exit(0);
   });

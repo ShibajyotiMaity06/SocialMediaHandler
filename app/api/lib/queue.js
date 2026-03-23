@@ -1,7 +1,7 @@
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
 
-const QUEUE_NAME = process.env.X_QUEUE_NAME || "x-post-queue";
+const QUEUE_NAME = process.env.SOCIAL_QUEUE_NAME || process.env.X_QUEUE_NAME || "social-post-queue";
 
 function getRedisConfig() {
   const host = process.env.UPSTASH_REDIS_HOST;
@@ -50,8 +50,8 @@ export function getQueueConnection() {
 }
 
 export function getXPostQueue() {
-  if (!globalThis.__xPostQueue) {
-    globalThis.__xPostQueue = new Queue(QUEUE_NAME, {
+  if (!globalThis.__socialPostQueue) {
+    globalThis.__socialPostQueue = new Queue(QUEUE_NAME, {
       connection: getQueueConnection(),
       defaultJobOptions: {
         attempts: 5,
@@ -65,17 +65,17 @@ export function getXPostQueue() {
     });
   }
 
-  return globalThis.__xPostQueue;
+  return globalThis.__socialPostQueue;
 }
 
-export async function enqueueXPost(jobData, delayMs = 0) {
+export async function enqueueSocialPost(jobData, delayMs = 0) {
   const queue = getXPostQueue();
   return queue.add("publish", jobData, {
     delay: Math.max(0, Number(delayMs) || 0),
   });
 }
 
-export async function cancelXPostJob(jobId) {
+export async function cancelSocialPostJob(jobId) {
   if (!jobId) return;
   const queue = getXPostQueue();
   const job = await queue.getJob(String(jobId));
@@ -84,6 +84,11 @@ export async function cancelXPostJob(jobId) {
   }
 }
 
-export function getXQueueName() {
+export function getSocialQueueName() {
   return QUEUE_NAME;
 }
+
+// Backward-compatible aliases for existing X-only imports.
+export const enqueueXPost = enqueueSocialPost;
+export const cancelXPostJob = cancelSocialPostJob;
+export const getXQueueName = getSocialQueueName;
