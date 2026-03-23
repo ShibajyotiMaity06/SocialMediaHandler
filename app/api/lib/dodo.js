@@ -2,6 +2,10 @@ import DodoPayments from "dodopayments";
 
 let dodoInstance = null;
 
+function getDodoApiKey() {
+  return process.env.DODO_PAYMENTS_API_KEY || process.env.DODO_SECRET_KEY || "";
+}
+
 function getDodoEnvironment() {
   const value = process.env.DODO_PAYMENTS_ENVIRONMENT || "live_mode";
   return value === "test_mode" ? "test_mode" : "live_mode";
@@ -10,12 +14,13 @@ function getDodoEnvironment() {
 function getDodo() {
   if (dodoInstance) return dodoInstance;
 
-  if (!process.env.DODO_PAYMENTS_API_KEY) {
-    throw new Error("Please define DODO_PAYMENTS_API_KEY in .env");
+  const apiKey = getDodoApiKey();
+  if (!apiKey) {
+    throw new Error("Please define DODO_PAYMENTS_API_KEY or DODO_SECRET_KEY in .env");
   }
 
   dodoInstance = new DodoPayments({
-    bearerToken: process.env.DODO_PAYMENTS_API_KEY,
+    bearerToken: apiKey,
     environment: getDodoEnvironment(),
   });
 

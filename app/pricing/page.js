@@ -342,12 +342,12 @@ export default function PricingPage() {
             }
 
             if (kind === "addon") {
-              router.push("/main?payment=addon_success");
+              router.push("/dashboard?payment=addon_success&provider=razorpay");
             } else if (tier === "test") {
               router.push("/pricing?payment=test_success");
             } else {
               // Subscription payment verified
-              router.push("/main?payment=success");
+              router.push("/dashboard?payment=success&provider=razorpay");
             }
           } catch (err) {
             setError(err.message);

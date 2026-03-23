@@ -5,6 +5,36 @@ import { callGemini, callGroq } from '../lib/ai-client';
 import { getAdaptationPrompt, getPPSPrompt } from '../lib/prompts';
 import { getCached, setCached, CACHE_KEYS } from '../lib/cache';
 
+function normalizeHookText(hook) {
+  if (typeof hook === 'string') return hook.trim();
+  if (!hook || typeof hook !== 'object') return '';
+
+  const candidate =
+    hook.text ||
+    hook.hook ||
+    hook.value ||
+    hook.title ||
+    '';
+
+  return String(candidate).trim();
+}
+
+function normalizeAdaptationShape(adaptation) {
+  if (!adaptation || typeof adaptation !== 'object') return adaptation;
+
+  const hooks = Array.isArray(adaptation.hooks)
+    ? adaptation.hooks.map(normalizeHookText).filter(Boolean)
+    : [];
+
+  const selectedHookText = normalizeHookText(adaptation.selectedHook);
+
+  return {
+    ...adaptation,
+    hooks,
+    selectedHook: selectedHookText || hooks[0] || String(adaptation.mainPost || '').trim(),
+  };
+}
+
 function parseModelJson(raw, label) {
   if (raw && typeof raw === 'object') return raw;
 
@@ -56,9 +86,13 @@ export async function POST(req) {
     
     if (cached) {
       console.log('[RETURNING CACHED ADAPTATIONS]');
+      const normalizedCached = Array.isArray(cached)
+        ? cached.map(normalizeAdaptationShape)
+        : [];
+
       return NextResponse.json({
         success: true,
-        data: cached,
+        data: normalizedCached,
         cached: true,
       });
     }
@@ -89,17 +123,11 @@ export async function POST(req) {
 
         const pps = parseModelJson(ppsRaw, `${platform} PPS`);
 
-        const hooks = Array.isArray(adaptation.hooks)
-          ? adaptation.hooks.filter(Boolean)
-          : [];
-
-        adaptations.push({
+        adaptations.push(normalizeAdaptationShape({
           platform,
           ...adaptation,
-          hooks,
           pps,
-          selectedHook: hooks[0] || adaptation.selectedHook || adaptation.mainPost || '',
-        });
+        }));
 
         // Delay between platforms to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 1500));

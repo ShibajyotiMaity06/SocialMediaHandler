@@ -8,6 +8,15 @@ import Navbar from "@/components/Navbar";
 import Prism from "@/components/Prism";
 import ConnectXButton from "@/components/ConnectXButton";
 
+const TIER_SEQUENCE = ["free", "growth", "creator", "agency"];
+
+function shouldShowPaymentPopupFromUrl() {
+  if (typeof window === "undefined") return false;
+  const url = new URL(window.location.href);
+  const paymentStatus = url.searchParams.get("payment");
+  return paymentStatus === "success" || paymentStatus === "addon_success";
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -17,6 +26,9 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPaymentSuccessPopup, setShowPaymentSuccessPopup] = useState(
+    shouldShowPaymentPopupFromUrl
+  );
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -39,6 +51,18 @@ export default function DashboardPage() {
         .catch(console.error);
     }
   }, [status]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    const paymentStatus = url.searchParams.get("payment");
+    if (paymentStatus === "success" || paymentStatus === "addon_success") {
+      url.searchParams.delete("payment");
+      url.searchParams.delete("provider");
+      window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+    }
+  }, []);
 
   function extractVideoId(url) {
     const patterns = [
@@ -104,6 +128,15 @@ export default function DashboardPage() {
   const videosUsed = usage?.videos_used ?? 0;
   const videosLimit = Math.max(usage?.videos_limit ?? 1, 1);
   const usageRatio = Math.min(videosUsed / videosLimit, 1);
+  const currentTier = String(usage?.tier || session?.user?.tier || "free").toLowerCase();
+  const currentTierIndex = TIER_SEQUENCE.indexOf(currentTier);
+  const nextTier =
+    currentTierIndex >= 0 && currentTierIndex < TIER_SEQUENCE.length - 1
+      ? TIER_SEQUENCE[currentTierIndex + 1]
+      : null;
+  const upgradeButtonLabel = nextTier
+    ? `Upgrade to ${nextTier.charAt(0).toUpperCase()}${nextTier.slice(1)} →`
+    : "You are on highest tier";
 
   const getPlatformIconSrc = (platform) => {
     const p = String(platform || "").toLowerCase();
@@ -191,12 +224,18 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
-              <Link
-                href="/pricing"
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-indigo-500/20 transition-all"
-              >
-                Upgrade to Growth →
-              </Link>
+              {nextTier ? (
+                <Link
+                  href="/pricing"
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-indigo-500/20 transition-all"
+                >
+                  {upgradeButtonLabel}
+                </Link>
+              ) : (
+                <span className="px-4 py-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 text-emerald-300 text-sm font-bold">
+                  {upgradeButtonLabel}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -384,6 +423,27 @@ export default function DashboardPage() {
                   Maybe Later
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPaymentSuccessPopup && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111116]/90 backdrop-blur-xl border border-emerald-400/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="text-center">
+              <div className="text-4xl mb-3">✅</div>
+              <h2 className="text-xl font-bold text-white mb-2">Payment successful</h2>
+              <p className="text-slate-300 text-sm mb-5">
+                Your payment has been processed successfully.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowPaymentSuccessPopup(false)}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-[#041015] font-bold text-sm hover:brightness-110 transition-all"
+              >
+                Continue
+              </button>
             </div>
           </div>
         </div>

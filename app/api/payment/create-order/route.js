@@ -79,7 +79,8 @@ export async function POST(request) {
       const proto = request.headers.get("x-forwarded-proto") || "https";
       const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
       const baseUrl = host ? `${proto}://${host}` : "https://www.vyralpro.xyz";
-      const returnUrl = `${baseUrl}/pricing?payment=dodo_redirect`;
+      const successType = kind === "addon" ? "addon_success" : "success";
+      const returnUrl = `${baseUrl}/dashboard?payment=${successType}&provider=dodo`;
 
       const checkoutSession = await getDodo().checkoutSessions.create({
         product_cart: [{ product_id: dodoProductId, quantity: 1 }],

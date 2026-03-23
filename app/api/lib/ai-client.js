@@ -78,35 +78,83 @@ export async function callGroq(messages, options = {}) {
 }
 
 // Gemini Client
-const geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const geminiApiKeys = [
+  process.env.GEMINI_API_KEY,
+  process.env.GEMINI_API_KEY2,
+  process.env.GEMINI_API_KEY3,
+].filter(Boolean);
+
+const geminiClients = geminiApiKeys.map((key) => new GoogleGenerativeAI(key));
+let geminiKeyCursor = 0;
+
+function isGeminiRateLimitError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const status = Number(error?.status || error?.code || 0);
+
+  return (
+    status === 429 ||
+    message.includes("429") ||
+    message.includes("resource_exhausted") ||
+    message.includes("quota") ||
+    message.includes("rate limit")
+  );
+}
 
 export async function callGemini(prompt, systemInstruction, options = {}) {
   const limit = 12; // Conservative for free tier
 
-  if (!rateLimiter.canMakeRequest('gemini', limit)) {
-    const waitMs = rateLimiter.waitTime('gemini', limit);
-    throw new Error(`RATE_LIMIT_GEMINI:${Math.ceil(waitMs / 1000)}`);
+  if (geminiClients.length === 0) {
+    throw new Error("GEMINI_API_KEY is not configured");
   }
 
-  rateLimiter.addRequest('gemini');
+  let lastRateLimitError = null;
+  let bestWaitMs = 0;
 
-  try {
-    const model = geminiClient.getGenerativeModel({
-      model: 'gemini-2.5-flash-lite',
-      systemInstruction: { text: systemInstruction },
-      generationConfig: {
-        temperature: options.temperature ?? 0.7,
-        maxOutputTokens: options.maxTokens ?? 2000,
-        responseMimeType: 'application/json',
-      },
-    });
+  for (let offset = 0; offset < geminiClients.length; offset += 1) {
+    const index = (geminiKeyCursor + offset) % geminiClients.length;
+    const limiterKey = `gemini_${index}`;
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
-  } catch (error) {
-    console.error('[GEMINI ERROR]', error.message);
-    throw error;
+    if (!rateLimiter.canMakeRequest(limiterKey, limit)) {
+      bestWaitMs = Math.max(bestWaitMs, rateLimiter.waitTime(limiterKey, limit));
+      continue;
+    }
+
+    rateLimiter.addRequest(limiterKey);
+
+    try {
+      const model = geminiClients[index].getGenerativeModel({
+        model: 'gemini-2.5-flash-lite',
+        systemInstruction: { text: systemInstruction },
+        generationConfig: {
+          temperature: options.temperature ?? 0.7,
+          maxOutputTokens: options.maxTokens ?? 2000,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const result = await model.generateContent(prompt);
+      geminiKeyCursor = (index + 1) % geminiClients.length;
+      return result.response.text();
+    } catch (error) {
+      if (isGeminiRateLimitError(error)) {
+        lastRateLimitError = error;
+        continue;
+      }
+
+      console.error('[GEMINI ERROR]', error.message);
+      throw error;
+    }
   }
+
+  if (bestWaitMs > 0) {
+    throw new Error(`RATE_LIMIT_GEMINI:${Math.ceil(bestWaitMs / 1000)}`);
+  }
+
+  if (lastRateLimitError) {
+    throw new Error('RATE_LIMIT_GEMINI_KEYS_EXHAUSTED');
+  }
+
+  throw new Error('GEMINI_REQUEST_FAILED');
 }
 
 // OpenRouter fallback (not using for now to save quota)

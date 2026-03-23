@@ -7,6 +7,15 @@ import { PLATFORM_CONFIG } from '@/app/api/lib/constants';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+function normalizeHookText(hook) {
+  if (typeof hook === 'string') return hook.trim();
+  if (!hook || typeof hook !== 'object') return '';
+
+  return String(
+    hook.text || hook.hook || hook.value || hook.title || ''
+  ).trim();
+}
+
 const CircularProgress = ({ score, category }) => {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
@@ -64,6 +73,20 @@ export default function PlatformCard({
 
   const config = PLATFORM_CONFIG[adaptation.platform];
   const isFree = userTier === 'free';
+  const normalizedHooks = Array.isArray(adaptation.hooks)
+    ? adaptation.hooks.map(normalizeHookText).filter(Boolean)
+    : [];
+  const normalizedHashtags = Array.isArray(adaptation.hashtags)
+    ? adaptation.hashtags.map((tag) => String(tag || '').trim()).filter(Boolean)
+    : [];
+  const normalizedMainPost = String(adaptation.mainPost || '');
+  const normalizedPpsReasons = Array.isArray(adaptation?.pps?.reasons)
+    ? adaptation.pps.reasons.map((reason) => String(reason || '').trim()).filter(Boolean)
+    : [];
+  const normalizedVisualSuggestion = String(adaptation.visualSuggestion || '');
+  const normalizedCta = String(adaptation.cta || '');
+  const selectedHookText =
+    normalizeHookText(adaptation.selectedHook) || normalizedHooks[0] || '';
 
   if (adaptation.error) {
     return (
@@ -88,14 +111,14 @@ export default function PlatformCard({
   };
 
   const handleCopy = () => {
-    const fullPost = `${adaptation.selectedHook}\n\n${adaptation.mainPost}\n\n${adaptation.hashtags.map(t => `#${t}`).join(' ')}`;
+    const fullPost = `${selectedHookText}\n\n${normalizedMainPost}\n\n${normalizedHashtags.map(t => `#${t}`).join(' ')}`;
     navigator.clipboard.writeText(fullPost);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const openImageModal = () => {
-    const defaultPrompt = `${adaptation.selectedHook}\n\n${adaptation.mainPost}`.trim();
+    const defaultPrompt = `${selectedHookText}\n\n${normalizedMainPost}`.trim();
     setImagePrompt(defaultPrompt);
     setGeneratedImageUrl('');
     setImageCreditsMeta(null);
@@ -119,7 +142,7 @@ export default function PlatformCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: finalPrompt,
-          postText: `${adaptation.selectedHook}\n\n${adaptation.mainPost}`,
+          postText: `${selectedHookText}\n\n${normalizedMainPost}`,
         }),
       });
 
@@ -142,8 +165,8 @@ export default function PlatformCard({
   };
 
   const handleSchedule = () => {
-    const title = adaptation.selectedHook?.slice(0, 80) || `New ${config.name} post`;
-    const content = `${adaptation.selectedHook}\n\n${adaptation.mainPost}`;
+    const title = selectedHookText.slice(0, 80) || `New ${config.name} post`;
+    const content = `${selectedHookText}\n\n${normalizedMainPost}`;
     const params = new URLSearchParams({
       title,
       platform: adaptation.platform,
@@ -152,10 +175,10 @@ export default function PlatformCard({
     router.push(`/scheduled?${params.toString()}`);
   };
 
-  const isLongPost = adaptation.mainPost.length > 300;
+  const isLongPost = normalizedMainPost.length > 300;
   const displayPost = isExpanded || !isLongPost 
-    ? adaptation.mainPost 
-    : `${adaptation.mainPost.substring(0, 300)}...`;
+    ? normalizedMainPost 
+    : `${normalizedMainPost.substring(0, 300)}...`;
 
   return (
     <div className="bg-white/5 dark:bg-[#111116]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 lg:p-8 flex flex-col relative overflow-hidden shadow-2xl">
@@ -184,11 +207,11 @@ export default function PlatformCard({
           <div className="mb-6">
             <div className="flex items-center justify-between text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">
               <span>Select Hook</span>
-              <span className="bg-white/5 py-1 px-3 rounded-md">{adaptation.hooks.length} options</span>
+              <span className="bg-white/5 py-1 px-3 rounded-md">{normalizedHooks.length} options</span>
             </div>
             <div className="space-y-3">
-              {adaptation.hooks.map((hook, idx) => {
-                const isSelected = adaptation.selectedHook === hook;
+              {normalizedHooks.map((hook, idx) => {
+                const isSelected = selectedHookText === hook;
                 return (
                   <div
                     key={idx}
@@ -231,7 +254,7 @@ export default function PlatformCard({
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Post Preview</p>
             
             <div className="text-[15px] leading-[1.8] text-white/80 font-medium whitespace-pre-wrap relative z-10 flex-grow">
-              <span className="text-indigo-300 font-bold block mb-4 text-lg leading-snug">{adaptation.selectedHook}</span>
+              <span className="text-indigo-300 font-bold block mb-4 text-lg leading-snug">{selectedHookText}</span>
               {displayPost}
               
               {isLongPost && (
@@ -246,7 +269,7 @@ export default function PlatformCard({
 
             {/* Hashtags */}
             <div className="mt-8 flex flex-wrap gap-2.5 relative z-10">
-              {adaptation.hashtags.map((tag, idx) => (
+              {normalizedHashtags.map((tag, idx) => (
                 <span key={idx} className="bg-white/10 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/5">
                   #{tag}
                 </span>
@@ -270,7 +293,7 @@ export default function PlatformCard({
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
                 <p className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">Why this score:</p>
                 <ul className="space-y-3">
-                  {adaptation.pps.reasons.map((reason, idx) => (
+                  {normalizedPpsReasons.map((reason, idx) => (
                     <li key={idx} className="flex items-start text-sm text-slate-300 font-medium leading-relaxed">
                       <span className="text-indigo-500 mr-2 mt-0.5 opacity-70">•</span>
                       <span>{reason}</span>
@@ -281,10 +304,10 @@ export default function PlatformCard({
 
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
                 <p className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-2">Visual Strategy</p>
-                <p className="text-sm text-slate-300 font-medium leading-relaxed mb-5">{adaptation.visualSuggestion}</p>
+                <p className="text-sm text-slate-300 font-medium leading-relaxed mb-5">{normalizedVisualSuggestion}</p>
                 
                 <p className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-2">Call to Action</p>
-                <p className="text-sm text-slate-300 font-medium leading-relaxed">{adaptation.cta}</p>
+                <p className="text-sm text-slate-300 font-medium leading-relaxed">{normalizedCta}</p>
               </div>
             </div>
           )}

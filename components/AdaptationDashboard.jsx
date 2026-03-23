@@ -8,6 +8,12 @@ import PlatformCard from './PlatformCard';
 import { PLATFORM_CONFIG } from '@/app/api/lib/constants';
 import Link from 'next/link';
 
+function normalizeHookText(hook) {
+  if (typeof hook === 'string') return hook.trim();
+  if (!hook || typeof hook !== 'object') return '';
+  return String(hook.text || hook.hook || hook.value || hook.title || '').trim();
+}
+
 export default function AdaptationDashboard({ videoId, videoTitle }) {
   const { data: session } = useSession();
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
@@ -154,9 +160,13 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
       const result = await response.json();
 
       if (response.ok) {
+        const newHooks = Array.isArray(result.data)
+          ? result.data.map(v => v?.hook).filter(Boolean)
+          : [];
+
         setAdaptations(prev => prev.map(a =>
           a.platform === platform
-            ? { ...a, hooks: [...a.hooks, ...result.data.map(v => v.hook)] }
+            ? { ...a, hooks: [...(Array.isArray(a.hooks) ? a.hooks : []), ...newHooks] }
             : a
         ));
       } else {
@@ -170,8 +180,9 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
 
   // Change hook
   const handleHookChange = (platform, hook) => {
+    const normalizedHook = normalizeHookText(hook);
     setAdaptations(prev => prev.map(a =>
-      a.platform === platform ? { ...a, selectedHook: hook } : a
+      a.platform === platform ? { ...a, selectedHook: normalizedHook } : a
     ));
   };
 
@@ -370,7 +381,10 @@ export default function AdaptationDashboard({ videoId, videoTitle }) {
                     userTier={userTier}
                     onHookChange={(hook) => handleHookChange(adaptation.platform, hook)}
                     onRequestVariations={() =>
-                      handleRequestVariations(adaptation.platform, adaptation.selectedHook || adaptation.hooks[0])
+                      handleRequestVariations(
+                        adaptation.platform,
+                        normalizeHookText(adaptation.selectedHook) || normalizeHookText(adaptation.hooks?.[0])
+                      )
                     }
                   />
                 </div>
