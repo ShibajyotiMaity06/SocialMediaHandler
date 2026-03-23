@@ -15,6 +15,11 @@ const PLATFORM_OPTIONS = [
   { value: "youtube_shorts", label: "YouTube Shorts", icon: "🎬" },
 ];
 
+const PLATFORM_LABEL_MAP = PLATFORM_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = `${item.icon} ${item.label}`;
+  return acc;
+}, {});
+
 const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function toDateKey(date) {
@@ -124,6 +129,14 @@ function ScheduledPageContent() {
     time: "09:00",
     notes: "",
     content: "",
+  });
+  const [bestTimeModal, setBestTimeModal] = useState({
+    open: false,
+    niche: "",
+    targetAudience: "",
+    platforms: ["twitter"],
+    loading: false,
+    error: "",
   });
 
   const prefillDoneRef = useRef(false);
@@ -301,6 +314,152 @@ function ScheduledPageContent() {
     }, durationMs);
   }
 
+  function openBestTimeModal() {
+    setBestTimeModal({
+      open: true,
+      niche: "",
+      targetAudience: "",
+      platforms: ["twitter"],
+      loading: false,
+      error: "",
+    });
+  }
+
+  function closeBestTimeModal() {
+    if (bestTimeModal.loading) return;
+    setBestTimeModal((prev) => ({ ...prev, open: false, error: "" }));
+  }
+
+  function toggleBestTimePlatform(platform) {
+    setBestTimeModal((prev) => {
+      const exists = prev.platforms.includes(platform);
+      const nextPlatforms = exists
+        ? prev.platforms.filter((item) => item !== platform)
+        : [...prev.platforms, platform];
+
+      return {
+        ...prev,
+        platforms: nextPlatforms,
+        error: "",
+      };
+    });
+  }
+
+  function buildBestTimeNotes(recommendation) {
+    const bestOverall = recommendation?.best_overall || {};
+    const reasoning = Array.isArray(bestOverall.reasoning)
+      ? bestOverall.reasoning.filter(Boolean).slice(0, 3)
+      : [];
+    const platformBreakdown = Array.isArray(recommendation?.platform_breakdown)
+      ? recommendation.platform_breakdown
+      : [];
+
+    const lines = [];
+    if (recommendation?.summary) {
+      lines.push(`AI Summary: ${recommendation.summary}`);
+    }
+
+    if (bestOverall?.confidence) {
+      lines.push(`Confidence: ${bestOverall.confidence}`);
+    }
+
+    if (reasoning.length > 0) {
+      lines.push(`Signals: ${reasoning.join(" | ")}`);
+    }
+
+    if (platformBreakdown.length > 0) {
+      const compact = platformBreakdown
+        .slice(0, 4)
+        .map((item) => `${item.platform}: ${item.best_day} ${item.best_time_slot}`)
+        .join(" ; ");
+      lines.push(`Per-platform: ${compact}`);
+    }
+
+    return lines.join("\n");
+  }
+
+  async function findBestTime(event) {
+    event.preventDefault();
+
+    const niche = bestTimeModal.niche.trim();
+    const targetAudience = bestTimeModal.targetAudience.trim();
+    const selectedPlatforms = bestTimeModal.platforms;
+
+    if (!niche || !targetAudience) {
+      setBestTimeModal((prev) => ({
+        ...prev,
+        error: "Please provide niche and target audience.",
+      }));
+      return;
+    }
+
+    if (selectedPlatforms.length === 0) {
+      setBestTimeModal((prev) => ({
+        ...prev,
+        error: "Select at least one platform.",
+      }));
+      return;
+    }
+
+    try {
+      setBestTimeModal((prev) => ({ ...prev, loading: true, error: "" }));
+
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const response = await fetch("/api/schedule/best-time", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          niche,
+          targetAudience,
+          platforms: selectedPlatforms,
+          timezone,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to find best time");
+      }
+
+      const recommendation = payload.recommendation || {};
+      const schedule = payload.schedule || {};
+      const chosenPlatform = isLockedTier
+        ? "linkedin"
+        : selectedPlatforms[0] || "twitter";
+
+      setForm({
+        title: `Peak engagement post (${recommendation?.best_overall?.day_of_week || "Recommended slot"})`,
+        platform: chosenPlatform,
+        date: schedule.date || toDateKey(new Date()),
+        time: schedule.time || "09:00",
+        notes: buildBestTimeNotes(recommendation),
+        content: "",
+      });
+
+      setModalState({ open: true, mode: "add", postId: null });
+      setBestTimeModal((prev) => ({
+        ...prev,
+        open: false,
+        loading: false,
+        error: "",
+      }));
+
+      const primaryMessage =
+        "Best time found. Review the prefilled date/time and save to schedule.";
+      const freeTierMessage =
+        isLockedTier && !selectedPlatforms.includes("linkedin")
+          ? " Free tier defaults to LinkedIn for manual flow."
+          : "";
+      setFeedback(primaryMessage + freeTierMessage);
+    } catch (error) {
+      setBestTimeModal((prev) => ({
+        ...prev,
+        loading: false,
+        error: error.message || "Failed to find best time.",
+      }));
+    }
+  }
+
   async function copyAndOpenLinkedInFeed() {
     const composed =
       (form.content || "").trim() ||
@@ -430,7 +589,7 @@ function ScheduledPageContent() {
             </div>
             <button
               type="button"
-              onClick={() => setFeedback("Find Best Time is coming soon.")}
+              onClick={openBestTimeModal}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-[#081418] font-bold text-sm hover:brightness-110 transition-all"
             >
               Find Best Time
@@ -631,6 +790,106 @@ function ScheduledPageContent() {
           )}
         </section>
       </main>
+
+      {bestTimeModal.open && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-xl rounded-2xl border border-white/15 bg-[#12141a] p-5">
+            <h4 className="text-lg font-bold text-white mb-1">Find Best Time</h4>
+            <p className="text-xs text-slate-400 mb-4">
+              Tell us your niche, target audience, and platforms. Gemini will suggest the
+              highest-engagement slot and preload it in your calendar form.
+            </p>
+
+            <form onSubmit={findBestTime} className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Niche</label>
+                <input
+                  value={bestTimeModal.niche}
+                  onChange={(e) =>
+                    setBestTimeModal((prev) => ({
+                      ...prev,
+                      niche: e.target.value,
+                      error: "",
+                    }))
+                  }
+                  placeholder="e.g. productivity tips for developers"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Target audience</label>
+                <input
+                  value={bestTimeModal.targetAudience}
+                  onChange={(e) =>
+                    setBestTimeModal((prev) => ({
+                      ...prev,
+                      targetAudience: e.target.value,
+                      error: "",
+                    }))
+                  }
+                  placeholder="e.g. founders and early-career marketers in India"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-2">Platforms (choose many)</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PLATFORM_OPTIONS.map((option) => {
+                    const checked = bestTimeModal.platforms.includes(option.value);
+
+                    return (
+                      <label
+                        key={option.value}
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-colors ${
+                          checked
+                            ? "border-cyan-400/50 bg-cyan-500/10 text-cyan-100"
+                            : "border-white/10 bg-white/[0.02] text-slate-200 hover:bg-white/[0.05]"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleBestTimePlatform(option.value)}
+                          className="accent-cyan-500"
+                        />
+                        <span>{PLATFORM_LABEL_MAP[option.value]}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {bestTimeModal.error && (
+                <div className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+                  {bestTimeModal.error}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={closeBestTimeModal}
+                  disabled={bestTimeModal.loading}
+                  className="px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-slate-300 text-sm hover:bg-white/10 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={bestTimeModal.loading}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 text-[#081418] font-bold text-sm hover:brightness-110 disabled:opacity-50"
+                >
+                  {bestTimeModal.loading ? "Analyzing..." : "Analyze & Prefill"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {modalState.open && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center">

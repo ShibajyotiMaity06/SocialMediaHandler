@@ -30,6 +30,8 @@ public/demo.mp4
 .DS_Store
 *.pem
 oauth.md
+dodo.md
+
 
 # debug
 npm-debug.log*

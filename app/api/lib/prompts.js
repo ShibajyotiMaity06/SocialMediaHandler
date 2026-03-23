@@ -179,3 +179,62 @@ Output JSON:
 Be creative. Output ONLY valid JSON.`,
   };
 }
+
+// PROMPT 5: Best Posting Time Recommendation
+export function getBestTimePrompt({ niche, targetAudience, platforms, timezone }) {
+  const safePlatforms = Array.isArray(platforms) ? platforms.filter(Boolean) : [];
+
+  return {
+    system: `You are a social media growth strategist and posting-time optimizer.
+Your task is to recommend the best posting day and time for highest engagement.
+Return ONLY valid JSON matching the required schema.`,
+
+    user: `Goal:
+Given creator context, recommend the single best day and time slot to post for highest engagement, plus platform-specific alternatives when needed.
+
+Inputs:
+- Niche: ${niche}
+- Target audience: ${targetAudience}
+- Platforms selected: ${safePlatforms.join(", ")}
+- Audience primary timezone: ${timezone}
+
+Requirements:
+1) Analyze engagement windows by niche + audience behavior.
+2) If multiple platforms are selected, provide one unified best overall slot and per-platform suggestions.
+3) Recommend a concrete next datetime that can be scheduled immediately.
+4) Keep output concise and practical.
+
+Return JSON in this exact shape:
+{
+  "summary": "One-line recommendation",
+  "best_overall": {
+    "day_of_week": "Monday",
+    "time_slot": "18:30-19:30",
+    "timezone": "${timezone}",
+    "next_best_datetime_iso": "2026-03-27T18:30:00+05:30",
+    "expected_engagement_lift_percent": 0,
+    "confidence": "high|medium|low",
+    "reasoning": ["Short reason 1", "Short reason 2", "Short reason 3"]
+  },
+  "platform_breakdown": [
+    {
+      "platform": "Instagram",
+      "best_day": "Tuesday",
+      "best_time_slot": "19:00-20:00",
+      "confidence": "high|medium|low",
+      "reasoning": ["Short reason 1", "Short reason 2"]
+    }
+  ],
+  "backup_slots": [
+    {
+      "day_of_week": "Wednesday",
+      "time_slot": "12:00-13:00",
+      "timezone": "${timezone}",
+      "why": "Alternative if primary slot is missed"
+    }
+  ]
+}
+
+Output ONLY valid JSON. No markdown, no code fences, no extra text.`,
+  };
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
@@ -109,6 +109,7 @@ const plans = [
       "Scheduling calendar",
       "Export (PDF, CSV, copy all)",
       "Email support",
+      "More exciting features coming soon",
       "No auto-posting",
       "No trend insights",
       "No analytics tracking",
@@ -135,9 +136,10 @@ const plans = [
       "Everything in Growth",
       "25 AI images/month",
       "Trend insights & inspiration engine",
-      "Auto-posting to platforms",
+      "Auto-posting to X",
       "Performance analytics",
       "Batch processing",
+      "More exciting features coming soon",
       "Priority support (24h)",
       "No team seats",
       "No white label",
@@ -197,6 +199,10 @@ export default function PricingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(null); // tracks which tier is loading
   const [error, setError] = useState("");
+  const [recommendedCurrency, setRecommendedCurrency] = useState("USD");
+  const [manualCurrency, setManualCurrency] = useState("");
+  const [countryCode, setCountryCode] = useState("");
+  const [loadingPaymentContext, setLoadingPaymentContext] = useState(true);
   const normalizedUserEmail = session?.user?.email?.toLowerCase();
   const canSeeTestTier = Boolean(
     normalizedUserEmail && TEST_TIER_ALLOWED_EMAILS.has(normalizedUserEmail)
@@ -204,6 +210,43 @@ export default function PricingPage() {
   const visiblePlans = canSeeTestTier
     ? plans
     : plans.filter((plan) => plan.tier !== "test");
+  const activeCurrency = manualCurrency || recommendedCurrency;
+  const activeProvider = activeCurrency === "INR" ? "razorpay" : "dodo";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPaymentContext() {
+      try {
+        const res = await fetch("/api/payment/context");
+        if (!res.ok) {
+          throw new Error("Could not resolve payment region.");
+        }
+
+        const data = await res.json();
+        if (!cancelled) {
+          setRecommendedCurrency(
+            data.recommended_currency === "INR" ? "INR" : "USD"
+          );
+          setCountryCode(data.country_code || "");
+        }
+      } catch {
+        if (!cancelled) {
+          setRecommendedCurrency("USD");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingPaymentContext(false);
+        }
+      }
+    }
+
+    loadPaymentContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleCheckout = async ({ kind, tier, addonKey, lockMessage }) => {
     if (lockMessage) {
@@ -237,7 +280,12 @@ export default function PricingPage() {
       const orderRes = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, tier, addonKey }),
+        body: JSON.stringify({
+          kind,
+          tier,
+          addonKey,
+          currencyPreference: activeCurrency,
+        }),
       });
 
       if (!orderRes.ok) {
@@ -246,6 +294,15 @@ export default function PricingPage() {
       }
 
       const orderData = await orderRes.json();
+
+      if (orderData.provider === "dodo") {
+        if (!orderData.checkout_url) {
+          throw new Error("Dodo checkout URL is missing.");
+        }
+
+        window.location.href = orderData.checkout_url;
+        return;
+      }
 
       // Step 3: Load Razorpay script and open checkout
       const loaded = await loadRazorpayScript();
@@ -402,6 +459,42 @@ export default function PricingPage() {
             No hidden fees. No surprise charges. Choose the plan that best fits
             your content engine needs.
           </p>
+
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="inline-flex items-center gap-1 rounded-xl border border-white/15 bg-white/5 p-1">
+              <button
+                type="button"
+                onClick={() => setManualCurrency("INR")}
+                disabled={loadingPaymentContext}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                  activeCurrency === "INR"
+                    ? "bg-cyan-500 text-black"
+                    : "text-slate-300 hover:text-white hover:bg-white/10"
+                } ${loadingPaymentContext ? "opacity-60 cursor-wait" : ""}`}
+              >
+                INR
+              </button>
+              <button
+                type="button"
+                onClick={() => setManualCurrency("USD")}
+                disabled={loadingPaymentContext}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                  activeCurrency === "USD"
+                    ? "bg-cyan-500 text-black"
+                    : "text-slate-300 hover:text-white hover:bg-white/10"
+                } ${loadingPaymentContext ? "opacity-60 cursor-wait" : ""}`}
+              >
+                USD
+              </button>
+            </div>
+            <div className="text-xs text-slate-500">
+              {loadingPaymentContext
+                ? "Detecting your region for payment recommendations..."
+                : `Detected country: ${countryCode || "Unknown"}. Default gateway: ${
+                    recommendedCurrency === "INR" ? "Razorpay" : "Dodo Payments"
+                  }.`}
+            </div>
+          </div>
         </div>
 
         {/* Error banner */}
@@ -457,7 +550,7 @@ export default function PricingPage() {
                   <div className="mb-2">
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-black tracking-tight">
-                        {plan.priceINR}
+                        {activeCurrency === "INR" ? plan.priceINR : plan.priceUSD}
                       </span>
                       <span className="text-slate-500 font-medium">
                         {plan.period === "one-time" ? "one-time" : "/mo"}
@@ -465,7 +558,9 @@ export default function PricingPage() {
                     </div>
                     {isPaid && (
                       <div className="mt-1 text-sm text-slate-500 font-medium">
-                        ≈ {plan.priceUSD} USD
+                        {activeCurrency === "INR"
+                          ? `≈ ${plan.priceUSD} USD`
+                          : `≈ ${plan.priceINR} INR`}
                       </div>
                     )}
                   </div>
@@ -571,8 +666,14 @@ export default function PricingPage() {
                   <h3 className="text-xl font-bold text-white">{pack.title}</h3>
                   <p className="text-slate-400 text-sm mt-1 min-h-[40px]">{pack.blurb}</p>
                   <div className="mt-4 mb-5">
-                    <div className="text-3xl font-black text-white">{pack.priceINR}</div>
-                    <div className="text-xs text-slate-500">≈ {pack.priceUSD} USD</div>
+                    <div className="text-3xl font-black text-white">
+                      {activeCurrency === "INR" ? pack.priceINR : pack.priceUSD}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {activeCurrency === "INR"
+                        ? `≈ ${pack.priceUSD} USD`
+                        : `≈ ${pack.priceINR} INR`}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -601,7 +702,9 @@ export default function PricingPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              Secured by Razorpay
+              {activeProvider === "razorpay"
+                ? "Secured by Razorpay"
+                : "Secured by Dodo Payments"}
             </span>
             <span>•</span>
             <span>256-bit SSL Encryption</span>

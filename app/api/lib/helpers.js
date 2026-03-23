@@ -18,16 +18,59 @@ export const TIER_LIMITS = {
 
 // Razorpay plan prices in paise (INR * 100)
 export const PLAN_PRICES = {
-  test: { amountInPaise: 100, label: "Test" }, // ₹1 for testing
-  growth: { amountInPaise: 190000, label: "Growth" },
-  creator: { amountInPaise: 490000, label: "Creator" },
-  pro: { amountInPaise: 1190000, label: "Pro" },
-  agency: { amountInPaise: 990000, label: "Agency" },
+  test: {
+    amountInPaise: 100,
+    amountInCents: 1,
+    label: "Test",
+    dodoProductEnvKey: "DODO_PRODUCT_ID_TEST",
+  }, // ₹1 / $0.01 for testing
+  growth: {
+    amountInPaise: 190000,
+    amountInCents: 1900,
+    label: "Growth",
+    dodoProductEnvKey: "DODO_PRODUCT_ID_GROWTH",
+  },
+  creator: {
+    amountInPaise: 490000,
+    amountInCents: 4900,
+    label: "Creator",
+    dodoProductEnvKey: "DODO_PRODUCT_ID_CREATOR",
+  },
+  pro: {
+    amountInPaise: 1190000,
+    amountInCents: 11900,
+    label: "Pro",
+    dodoProductEnvKey: "DODO_PRODUCT_ID_PRO",
+  },
+  agency: {
+    amountInPaise: 990000,
+    amountInCents: 9900,
+    label: "Agency",
+    dodoProductEnvKey: "DODO_PRODUCT_ID_AGENCY",
+  },
 };
 
 // Image credit add-on packs (INR * 100)
 export const ADDON_PACKS = {
-  add10: { amountInPaise: 50000, label: "+10 image credits", credits: 10 },
-  add20: { amountInPaise: 80000, label: "+20 image credits", credits: 20 },
-  add50: { amountInPaise: 150000, label: "+50 image credits", credits: 50 },
+  add10: {
+    amountInPaise: 50000,
+    amountInCents: 500,
+    label: "+10 image credits",
+    credits: 10,
+    dodoProductEnvKey: "DODO_PRODUCT_ID_ADDON_10",
+  },
+  add20: {
+    amountInPaise: 80000,
+    amountInCents: 800,
+    label: "+20 image credits",
+    credits: 20,
+    dodoProductEnvKey: "DODO_PRODUCT_ID_ADDON_20",
+  },
+  add50: {
+    amountInPaise: 150000,
+    amountInCents: 1500,
+    label: "+50 image credits",
+    credits: 50,
+    dodoProductEnvKey: "DODO_PRODUCT_ID_ADDON_50",
+  },
 };
