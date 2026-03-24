@@ -219,6 +219,9 @@ export default function PricingPage() {
   const visiblePlans = canSeeTestTier
     ? plans
     : plans.filter((plan) => plan.tier !== "test");
+  const plansGridColumnsClass = canSeeTestTier
+    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-5"
+    : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
   const activeCurrency = manualCurrency || recommendedCurrency;
   const activeProvider = activeCurrency === "INR" ? "razorpay" : "dodo";
 
@@ -511,7 +514,7 @@ export default function PricingPage() {
         </Link>
       </header>
 
-      <main className="relative z-10 container mx-auto px-6 pt-16 mt-10">
+      <main className="relative z-10 container mx-auto px-6 pt-10">
         <div className="text-center max-w-3xl mx-auto mb-20 animate-fade-in-up">
           <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white mb-6">
             Simple, transparent{" "}
@@ -550,13 +553,6 @@ export default function PricingPage() {
               >
                 USD
               </button>
-            </div>
-            <div className="text-xs text-slate-500">
-              {loadingPaymentContext
-                ? "Detecting your region for payment recommendations..."
-                : `Detected country: ${countryCode || "Unknown"}. Default gateway: ${
-                    recommendedCurrency === "INR" ? "Razorpay" : "Dodo Payments"
-                  }.`}
             </div>
 
             <div className="w-full max-w-md rounded-2xl border border-cyan-400/25 bg-cyan-500/5 px-4 py-4 text-left">
@@ -624,7 +620,7 @@ export default function PricingPage() {
         )}
 
         <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 xl:gap-6 max-w-[1600px] mx-auto animate-fade-in-up"
+          className={`grid ${plansGridColumnsClass} gap-5 xl:gap-6 max-w-[1600px] mx-auto animate-fade-in-up`}
           style={{ animationDelay: "100ms" }}
         >
           {visiblePlans.map((plan, idx) => {

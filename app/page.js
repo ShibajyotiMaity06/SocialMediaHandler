@@ -150,7 +150,7 @@ export default function Home() {
           <p className="text-slate-400 text-lg">Stop juggling 10 different tools. We consolidated the entire lifecycle into one powerful workflow.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto relative group">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto relative group">
           {/* Subtle connecting lines backgdrop effect */}
           <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-y-1/2 hidden md:block z-0 pointer-events-none"></div>
           
@@ -177,6 +177,33 @@ export default function Home() {
             </div>
             <h3 className="text-2xl font-bold text-white mb-4">Virality Scoring</h3>
             <p className="text-slate-400 leading-relaxed font-medium">Before you hit publish, our engine scores your post against 10M+ analyzed viral posts to predict engagement likelihood.</p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="relative z-10 bg-[#121216] border border-white/5 rounded-3xl p-8 hover:bg-[#15151b] hover:border-white/10 transition-all duration-300 hover:-translate-y-1 group/card">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-8 border border-emerald-500/20 group-hover/card:scale-110 transition-transform duration-300">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4">Smart Scheduling</h3>
+            <p className="text-slate-400 leading-relaxed font-medium">Plan your weekly content in one calendar, get best-time suggestions, and keep your publishing pipeline organized.</p>
+          </div>
+
+          {/* Feature 5 */}
+          <div className="relative z-10 bg-[#121216] border border-white/5 rounded-3xl p-8 hover:bg-[#15151b] hover:border-white/10 transition-all duration-300 hover:-translate-y-1 group/card">
+            <div className="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center text-violet-400 mb-8 border border-violet-500/20 group-hover/card:scale-110 transition-transform duration-300">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" /></svg>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4">Batch Processing</h3>
+            <p className="text-slate-400 leading-relaxed font-medium">Analyze up to 3 videos together and view each video separately in tabs with platform-specific output for faster workflows.</p>
+          </div>
+
+          {/* Feature 6 */}
+          <div className="relative z-10 bg-[#121216] border border-white/5 rounded-3xl p-8 hover:bg-[#15151b] hover:border-white/10 transition-all duration-300 hover:-translate-y-1 group/card">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-8 border border-amber-500/20 group-hover/card:scale-110 transition-transform duration-300">
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" /></svg>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4">AI Image Generation</h3>
+            <p className="text-slate-400 leading-relaxed font-medium">Generate custom visuals directly from your hook and caption so every post has scroll-stopping creative without design overhead.</p>
           </div>
         </div>
       </section>

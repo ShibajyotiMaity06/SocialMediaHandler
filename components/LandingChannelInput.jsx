@@ -39,7 +39,7 @@ export default function LandingChannelInput() {
               setError("");
             }
           }}
-          placeholder="Paste your YouTube handle or channel link here..."
+          placeholder="Paste any YouTube handle or channel link here..."
           className="flex-grow w-full bg-transparent text-white text-base lg:text-lg font-medium outline-none px-4 pt-3 pb-2 resize-none placeholder:text-gray-500"
           rows="2"
           aria-label="YouTube channel URL or handle"
