@@ -130,6 +130,7 @@ function ScheduledPageContent() {
     notes: "",
     content: "",
   });
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
   const [bestTimeModal, setBestTimeModal] = useState({
     open: false,
     niche: "",
@@ -279,6 +280,7 @@ function ScheduledPageContent() {
       notes: "",
       content: "",
     });
+    setIsContentExpanded(false);
     setModalState({ open: true, mode: "add", postId: null });
   }
 
@@ -296,11 +298,13 @@ function ScheduledPageContent() {
       notes: post.notes || "",
       content: post.content || "",
     });
+    setIsContentExpanded(false);
     setModalState({ open: true, mode: "edit", postId: post.id });
   }
 
   function closeModal() {
     setModalState({ open: false, mode: "add", postId: null });
+    setIsContentExpanded(false);
   }
 
   function showToast(message, tone = "info", durationMs = 1400) {
@@ -482,7 +486,14 @@ function ScheduledPageContent() {
       await new Promise((resolve) => setTimeout(resolve, 900));
     }
 
-    window.location.href = "https://www.linkedin.com/feed/";
+    const linkedInWindow = window.open(
+      "https://www.linkedin.com/feed/",
+      "_blank",
+      "noopener,noreferrer"
+    );
+    if (!linkedInWindow) {
+      window.location.href = "https://www.linkedin.com/feed/";
+    }
   }
 
   async function savePost(event) {
@@ -966,13 +977,24 @@ function ScheduledPageContent() {
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Post text (optional)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs text-slate-400 block">Post text (optional)</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsContentExpanded((prev) => !prev)}
+                    className="text-[11px] px-2.5 py-1 rounded-md border border-cyan-400/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 transition-colors"
+                  >
+                    {isContentExpanded ? "Collapse" : "Expand"}
+                  </button>
+                </div>
                 <textarea
-                  rows={4}
+                  rows={isContentExpanded ? 8 : 5}
                   value={form.content}
                   onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
                   placeholder="Paste generated post content here"
-                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50 resize-none"
+                  className={`w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50 resize-none transition-all duration-200 ${
+                    isContentExpanded ? "min-h-[220px]" : "min-h-[140px]"
+                  }`}
                 />
               </div>
 

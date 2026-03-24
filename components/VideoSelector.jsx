@@ -4,10 +4,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+
+const MAX_BATCH_VIDEOS = 3;
+const CREATOR_PLUS_TIERS = new Set(['creator', 'pro', 'agency']);
 
 export default function VideoSelector({ videos }) {
-  const [selectedVideo, setSelectedVideo] = useState(null);
+  const { data: session } = useSession();
+  const [selectedVideoIds, setSelectedVideoIds] = useState([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const router = useRouter();
+  const userTier = String(session?.user?.tier || 'free').toLowerCase();
+  const isCreatorPlus = CREATOR_PLUS_TIERS.has(userTier);
 
   const getVideoId = (video) => {
     return (
@@ -28,19 +36,73 @@ export default function VideoSelector({ videos }) {
     );
   };
 
-  const selectedVideoTitle = videos.find((video) => getVideoId(video) === selectedVideo)?.snippet?.title;
-
   const handleAnalyze = (videoId) => {
     if (videoId) {
       router.push(`/adapt/${videoId}`);
     }
   };
 
+  const toggleVideoSelection = (videoId) => {
+    if (!videoId) return;
+
+    setSelectedVideoIds((prev) => {
+      if (prev.includes(videoId)) {
+        return prev.filter((id) => id !== videoId);
+      }
+
+      if (!isCreatorPlus && prev.length >= 1) {
+        setShowUpgradeModal(true);
+        return prev;
+      }
+
+      if (prev.length >= MAX_BATCH_VIDEOS) {
+        return prev;
+      }
+
+      return [...prev, videoId];
+    });
+  };
+
+  const handleBatchAnalyze = () => {
+    if (selectedVideoIds.length === 0) return;
+
+    if (!isCreatorPlus && selectedVideoIds.length > 1) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    router.push(`/adapt/batch?videoIds=${encodeURIComponent(selectedVideoIds.join(','))}`);
+  };
+
   return (
     <div className="mt-8">
       <div className="mb-6">
         <h2 className="text-xl font-bold text-white mb-1">Recent Videos</h2>
-        <p className="text-sm text-slate-400">Select a video to AI-analyze and repurpose</p>
+        <p className="text-sm text-slate-400">Select up to 3 videos and process them in batch</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleBatchAnalyze}
+            disabled={selectedVideoIds.length === 0}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Analyze Selected ({selectedVideoIds.length}/{MAX_BATCH_VIDEOS})
+          </button>
+          {selectedVideoIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelectedVideoIds([])}
+              className="px-3 py-2 rounded-xl border border-white/10 text-slate-300 text-xs font-semibold hover:bg-white/5"
+            >
+              Clear
+            </button>
+          )}
+          {!isCreatorPlus && (
+            <span className="text-[11px] text-amber-300/80">
+              Multi-video batch is available on Creator tier ($49/mo)
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -48,6 +110,7 @@ export default function VideoSelector({ videos }) {
           const videoId = getVideoId(video);
           const thumbnailUrl = getThumbnail(video);
           const isDisabled = !videoId;
+          const isSelected = Boolean(videoId) && selectedVideoIds.includes(videoId);
 
           // Rotate some mock platforms for UI fidelity based on the screenshot
           const platforms = [
@@ -65,9 +128,24 @@ export default function VideoSelector({ videos }) {
                 flex flex-col bg-[#111116] border border-white/10 rounded-2xl overflow-hidden
                 transition-all duration-300 hover:border-indigo-500/50 hover:shadow-[0_0_20px_rgba(99,102,241,0.1)]
                 ${isDisabled ? 'opacity-50 grayscale' : ''}
+                ${isSelected ? 'ring-2 ring-indigo-500/70 border-indigo-400/40' : ''}
               `}
             >
               <div className="relative aspect-video w-full overflow-hidden bg-[#1a1a24]">
+                {!isDisabled && (
+                  <button
+                    type="button"
+                    onClick={() => toggleVideoSelection(videoId)}
+                    className={`absolute top-2 left-2 z-10 w-6 h-6 rounded-md border flex items-center justify-center ${
+                      isSelected
+                        ? 'bg-indigo-600 border-indigo-400 text-white'
+                        : 'bg-black/60 border-white/30 text-white/80'
+                    }`}
+                    title="Select for batch"
+                  >
+                    {isSelected ? '✓' : ''}
+                  </button>
+                )}
                 {thumbnailUrl ? (
                   <img
                     src={thumbnailUrl}
@@ -105,7 +183,7 @@ export default function VideoSelector({ videos }) {
                     onClick={() => !isDisabled && handleAnalyze(videoId)}
                     className={`w-full py-2.5 rounded-xl bg-gradient-to-r from-[#22d3ee] to-[#a855f7] text-white font-bold text-sm tracking-wide transition-opacity flex justify-center items-center gap-1 ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'}`}
                   >
-                    Generate AI Hooks <span className="text-base ml-0.5">✨</span>
+                    Analyze Single <span className="text-base ml-0.5">✨</span>
                   </button>
                 </div>
               </div>
@@ -113,6 +191,36 @@ export default function VideoSelector({ videos }) {
           );
         })}
       </div>
+
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111116]/90 border border-amber-400/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="text-center">
+              <div className="text-3xl mb-3">🔒</div>
+              <h3 className="text-lg font-bold text-white mb-2">Batch mode is locked</h3>
+              <p className="text-sm text-slate-300 mb-5">
+                Upgrade to Creator tier ($49/mo) to analyze up to 3 videos in one batch.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-300 text-sm"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/pricing')}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-bold"
+                >
+                  Upgrade
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

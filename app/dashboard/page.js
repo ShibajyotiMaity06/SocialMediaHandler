@@ -9,6 +9,8 @@ import Prism from "@/components/Prism";
 import ConnectXButton from "@/components/ConnectXButton";
 
 const TIER_SEQUENCE = ["free", "growth", "creator", "agency"];
+const CREATOR_PLUS_TIERS = new Set(["creator", "pro", "agency"]);
+const MAX_BATCH_VIDEOS = 3;
 
 function shouldShowPaymentPopupFromUrl() {
   if (typeof window === "undefined") return false;
@@ -22,10 +24,11 @@ export default function DashboardPage() {
   const router = useRouter();
   const [usage, setUsage] = useState(null);
   const [adaptations, setAdaptations] = useState([]);
-  const [videoUrl, setVideoUrl] = useState("");
+  const [videoUrls, setVideoUrls] = useState([""]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showCreatorUpgradeModal, setShowCreatorUpgradeModal] = useState(false);
   const [showPaymentSuccessPopup, setShowPaymentSuccessPopup] = useState(
     shouldShowPaymentPopupFromUrl
   );
@@ -82,37 +85,98 @@ export default function DashboardPage() {
     e.preventDefault();
     setError("");
 
-    const trimmed = videoUrl.trim();
-    if (!trimmed) {
+    const normalizedUrls = videoUrls.map((url) => url.trim()).filter(Boolean);
+
+    if (normalizedUrls.length === 0) {
       setError("Please enter a YouTube URL");
       return;
     }
 
-    const videoId = extractVideoId(trimmed);
-    if (!videoId) {
-      setError("Invalid YouTube URL. Please enter a valid video link.");
+    if (normalizedUrls.length > MAX_BATCH_VIDEOS) {
+      setError(`You can process up to ${MAX_BATCH_VIDEOS} videos at once.`);
+      return;
+    }
+
+    const currentTierValue = String(usage?.tier || session?.user?.tier || "free").toLowerCase();
+    const isCreatorPlus = CREATOR_PLUS_TIERS.has(currentTierValue);
+
+    if (!isCreatorPlus && normalizedUrls.length > 1) {
+      setShowCreatorUpgradeModal(true);
+      return;
+    }
+
+    const videoIds = normalizedUrls.map(extractVideoId);
+    if (videoIds.some((id) => !id)) {
+      setError("One or more links are invalid. Please use valid YouTube video URLs.");
+      return;
+    }
+
+    const uniqueVideoIds = [...new Set(videoIds)];
+
+    if (!isCreatorPlus && uniqueVideoIds.length > 1) {
+      setShowCreatorUpgradeModal(true);
       return;
     }
 
     setLoading(true);
 
     try {
-      // Check usage limit first
-      const checkRes = await fetch("/api/usage/check", { method: "POST" });
-      const checkData = await checkRes.json();
+      let usageSnapshot = usage;
+      if (!usageSnapshot) {
+        const usageRes = await fetch("/api/usage");
+        usageSnapshot = await usageRes.json();
+        if (usageRes.ok) {
+          setUsage(usageSnapshot);
+        }
+      }
 
-      if (!checkData.allowed) {
+      const remaining = Math.max(
+        Number(usageSnapshot?.videos_limit || 0) - Number(usageSnapshot?.videos_used || 0),
+        0
+      );
+
+      if (remaining < uniqueVideoIds.length) {
         setShowLimitModal(true);
         setLoading(false);
         return;
       }
 
-      // Navigate to adapt page
-      router.push(`/adapt/${videoId}`);
+      if (uniqueVideoIds.length === 1) {
+        router.push(`/adapt/${uniqueVideoIds[0]}`);
+      } else {
+        router.push(`/adapt/batch?videoIds=${encodeURIComponent(uniqueVideoIds.join(","))}`);
+      }
     } catch (err) {
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
+  }
+
+  function updateVideoUrl(index, value) {
+    setVideoUrls((prev) => prev.map((url, i) => (i === index ? value : url)));
+    if (error) setError("");
+  }
+
+  function handleAddMoreInput() {
+    const currentTierValue = String(usage?.tier || session?.user?.tier || "free").toLowerCase();
+    const isCreatorPlus = CREATOR_PLUS_TIERS.has(currentTierValue);
+
+    if (!isCreatorPlus) {
+      setShowCreatorUpgradeModal(true);
+      return;
+    }
+
+    setVideoUrls((prev) => {
+      if (prev.length >= MAX_BATCH_VIDEOS) return prev;
+      return [...prev, ""];
+    });
+  }
+
+  function handleRemoveInput(index) {
+    setVideoUrls((prev) => {
+      if (prev.length === 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   if (status === "loading") {
@@ -137,6 +201,7 @@ export default function DashboardPage() {
   const upgradeButtonLabel = nextTier
     ? `Upgrade to ${nextTier.charAt(0).toUpperCase()}${nextTier.slice(1)} →`
     : "You are on highest tier";
+  const isCreatorPlus = CREATOR_PLUS_TIERS.has(currentTier);
 
   const getPlatformIconSrc = (platform) => {
     const p = String(platform || "").toLowerCase();
@@ -246,57 +311,88 @@ export default function DashboardPage() {
             <span className="text-2xl">🎬</span>
             <div>
               <h2 className="text-lg font-bold text-white">
-                Analyze New Video
+                Analyze Videos
               </h2>
               <p className="text-slate-400 text-sm">
-                Paste YouTube URL to get started
+                Paste up to 3 YouTube links. Batch mode is Creator tier and above.
               </p>
             </div>
           </div>
 
-          <form onSubmit={handleAnalyze} className="flex gap-3">
-            <input
-              type="text"
-              value={videoUrl}
-              onChange={(e) => {
-                setVideoUrl(e.target.value);
-                if (error) setError("");
-              }}
-              placeholder="https://youtube.com/watch?v=..."
-              className="flex-grow px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm font-medium"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm hover:shadow-lg hover:shadow-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
+          <form onSubmit={handleAnalyze} className="space-y-3">
+            {videoUrls.map((url, index) => (
+              <div key={`video-input-${index}`} className="flex gap-2">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => updateVideoUrl(index, e.target.value)}
+                  placeholder={`Video ${index + 1}: https://youtube.com/watch?v=...`}
+                  className="flex-grow px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm font-medium"
+                />
+                {videoUrls.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveInput(index)}
+                    className="px-3 py-2 rounded-xl border border-white/10 text-slate-300 text-sm hover:bg-white/5"
+                    title="Remove"
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Checking...
-                </span>
-              ) : (
-                "Analyze →"
-              )}
-            </button>
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleAddMoreInput}
+                disabled={videoUrls.length >= MAX_BATCH_VIDEOS}
+                className="px-4 py-2 rounded-xl border border-white/10 text-slate-300 text-sm font-semibold hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add More ({videoUrls.length}/{MAX_BATCH_VIDEOS})
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm hover:shadow-lg hover:shadow-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Checking...
+                  </span>
+                ) : videoUrls.filter((entry) => entry.trim()).length > 1 ? (
+                  "Analyze Batch →"
+                ) : (
+                  "Analyze →"
+                )}
+              </button>
+            </div>
+
+            {!isCreatorPlus && (
+              <p className="text-xs text-amber-300/80">
+                Add More for batch processing is available on Creator tier ($49/mo).
+              </p>
+            )}
           </form>
 
           {error && (
@@ -395,12 +491,12 @@ export default function DashboardPage() {
               </h2>
               <p className="text-slate-400 text-sm mb-6">
                 You've used {usage?.videos_used}/{usage?.videos_limit} videos
-                this month on the Free plan.
+                this month. Please upgrade to continue processing videos.
               </p>
 
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6 text-left">
                 <p className="text-sm font-bold text-white mb-2">
-                  Upgrade to Growth ($19/mo) for:
+                  Upgrade your plan for:
                 </p>
                 <ul className="text-sm text-slate-300 space-y-1">
                   <li>• 12 videos/month</li>
@@ -422,6 +518,35 @@ export default function DashboardPage() {
                 >
                   Maybe Later
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreatorUpgradeModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111116]/90 backdrop-blur-xl border border-amber-400/30 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="text-center">
+              <div className="text-3xl mb-3">🔒</div>
+              <h2 className="text-xl font-bold text-white mb-2">Batch processing is locked</h2>
+              <p className="text-slate-300 text-sm mb-5">
+                Add More and multi-video batch analysis are available on Creator tier ($49/mo).
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreatorUpgradeModal(false)}
+                  className="flex-1 py-3 rounded-xl border border-white/10 text-slate-400 font-medium text-sm hover:bg-white/5 transition-colors"
+                >
+                  Maybe Later
+                </button>
+                <Link
+                  href="/pricing"
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm text-center hover:shadow-lg transition-all"
+                >
+                  Upgrade to Creator
+                </Link>
               </div>
             </div>
           </div>
