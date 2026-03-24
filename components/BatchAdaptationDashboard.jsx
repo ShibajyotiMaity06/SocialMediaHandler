@@ -328,7 +328,7 @@ export default function BatchAdaptationDashboard({ initialVideoIds = [] }) {
         <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-6">
           <h1 className="text-xl font-bold text-white mb-2">Batch Processing is a Creator feature</h1>
           <p className="text-amber-100/80 text-sm mb-4">
-            Analyze up to 3 videos in one run by upgrading to the Creator tier ($49/mo).
+            Analyze up to 3 videos in one run by upgrading to the Creator tier ($24/mo).
           </p>
           <Link
             href="/pricing"

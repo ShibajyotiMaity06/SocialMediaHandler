@@ -4,15 +4,16 @@ import ReferralCode from "../app/api/lib/models/ReferralCode.js";
 const REFERRAL_CODES = [
   "ABCDE",
   "FGHIJ",
-  "KLMNO",
-  "PQRST",
-  "UVWXY",
-  "ZABCD",
-  "EFGHI",
-  "JKLMN",
-  "OPQRS",
-  "TUVWX",
-  "UMYXC",
+  "XQJRV",
+  "PKWZM",
+  "HYTNL",
+  "BDFGU",
+  "MSVCE",
+  "RWQAO",
+  "JLNXP",
+  "TGKIB",
+  "FYHZD",
+  "UMVQS",
 ];
 
 async function run() {
