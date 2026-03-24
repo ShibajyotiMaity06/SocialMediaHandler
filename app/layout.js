@@ -36,6 +36,8 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Pacifico&family=Saira:ital,wght@0,100..900;1,100..900&display=swap"
           rel="stylesheet"
         />
+        <script defer src="https://cloud.umami.is/script.js" data-website-id="d64acf81-863b-4be5-b282-d7f2e0ce4ad6"></script>
+
       </head>
       <body className="min-h-full flex flex-col font-sans transition-colors duration-300">
         <SessionProvider>
