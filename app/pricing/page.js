@@ -86,8 +86,8 @@ const plans = [
   {
     name: "GROWTH",
     tier: "growth",
-    priceUSD: "$10",
-    priceINR: "₹940",
+    priceUSD: "$5",
+    priceINR: "₹474",
     period: "per month",
     positioning: "For consistent creators",
     color: "from-blue-400 to-blue-600",
@@ -111,8 +111,8 @@ const plans = [
   {
     name: "CREATOR",
     tier: "creator",
-    priceUSD: "$24",
-    priceINR: "₹2,260",
+    priceUSD: "$10",
+    priceINR: "₹948",
     period: "per month",
     positioning: "For serious creators & teams",
     color: "from-purple-400 to-fuchsia-600",
@@ -168,8 +168,8 @@ const plans = [
 const PAID_SUBSCRIPTION_TIERS = new Set(["growth", "creator", "pro", "agency"]);
 
 const planAmounts = {
-  growth: { INR: 940, USD: 10 },
-  creator: { INR: 2260, USD: 24 },
+  growth: { INR: 474, USD: 5 },
+  creator: { INR: 948, USD: 10 },
   pro: { INR: 11900, USD: 119 },
   agency: { INR: 9900, USD: 99 },
 };

@@ -390,7 +390,7 @@ export default function DashboardPage() {
 
             {!isCreatorPlus && (
               <p className="text-xs text-amber-300/80">
-                Add More for batch processing is available on Creator tier ($24/mo).
+                Add More for batch processing is available on Creator tier ($10/mo).
               </p>
             )}
           </form>
@@ -531,7 +531,7 @@ export default function DashboardPage() {
               <div className="text-3xl mb-3">🔒</div>
               <h2 className="text-xl font-bold text-white mb-2">Batch processing is locked</h2>
               <p className="text-slate-300 text-sm mb-5">
-                Add More and multi-video batch analysis are available on Creator tier ($24/mo).
+                Add More and multi-video batch analysis are available on Creator tier ($10/mo).
               </p>
               <div className="flex gap-3">
                 <button

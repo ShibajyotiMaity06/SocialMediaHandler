@@ -25,14 +25,14 @@ export const PLAN_PRICES = {
     dodoProductEnvKey: "DODO_PRODUCT_ID_TEST",
   }, // ₹1 / $0.01 for testing
   growth: {
-    amountInPaise: 94000,
-    amountInCents: 1000,
+    amountInPaise: 47400,
+    amountInCents: 500,
     label: "Growth",
     dodoProductEnvKey: "DODO_PRODUCT_ID_GROWTH",
   },
   creator: {
-    amountInPaise: 226000,
-    amountInCents: 2400,
+    amountInPaise: 94800,
+    amountInCents: 1000,
     label: "Creator",
     dodoProductEnvKey: "DODO_PRODUCT_ID_CREATOR",
   },

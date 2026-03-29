@@ -206,7 +206,7 @@ export default function TrendsPage() {
           {!isCreatorOrAbove ? (
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <p className="text-sm text-slate-300 mb-3">
-                This feature is available on Creator tier ($24) and above.
+                This feature is available on Creator tier ($10) and above.
               </p>
               <Link
                 href="/pricing"

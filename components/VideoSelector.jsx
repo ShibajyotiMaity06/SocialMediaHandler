@@ -99,7 +99,7 @@ export default function VideoSelector({ videos }) {
           )}
           {!isCreatorPlus && (
             <span className="text-[11px] text-amber-300/80">
-              Multi-video batch is available on Creator tier ($24/mo)
+              Multi-video batch is available on Creator tier ($10/mo)
             </span>
           )}
         </div>
@@ -199,7 +199,7 @@ export default function VideoSelector({ videos }) {
               <div className="text-3xl mb-3">🔒</div>
               <h3 className="text-lg font-bold text-white mb-2">Batch mode is locked</h3>
               <p className="text-sm text-slate-300 mb-5">
-                Upgrade to Creator tier ($24/mo) to analyze up to 3 videos in one batch.
+                Upgrade to Creator tier ($10/mo) to analyze up to 3 videos in one batch.
               </p>
               <div className="flex gap-3">
                 <button
